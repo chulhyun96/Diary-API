@@ -38,6 +38,19 @@ build/
 .env.development
 .env.production
 
+# 스프링부트 환경별 설정 파일 (보안 정보 포함)
+src/main/resources/application*.yaml
+src/main/resources/application*.yml
+
+# 공통 설정 파일은 예외로 포함
+!src/main/resources/application.yaml
+!src/main/resources/application.yml
+
+# 빌드 결과물 및 캐시
+bin/
+.gradle/
+build/
+
 # 로그 파일
 *.log
 
