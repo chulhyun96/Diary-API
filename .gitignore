@@ -39,8 +39,7 @@ build/
 .env.production
 
 # 스프링부트 환경별 설정 파일 (보안 정보 포함)
-src/main/resources/application*.yaml
-src/main/resources/application*.yml
+src/main/resources/application.yml
 src/main/resources/application-dev.yaml
 
 # 공통 설정 파일은 예외로 포함
