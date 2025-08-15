@@ -1,5 +1,6 @@
 package com.cheolhyeon.diary.security;
 
+import com.cheolhyeon.diary.dto.JWTResponse;
 import com.cheolhyeon.diary.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
@@ -38,13 +39,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             CustomOAuth2User customOAuth2User = (CustomOAuth2User) oauth2User;
             
             log.info("👤 카카오 사용자 정보:");
-            log.info("   - 카카오 ID: {}", customOAuth2User.getKakaoId());
+            log.info("   - 카카오 ID: {}", customOAuth2User.getOauth2Id());
             log.info("   - 닉네임: {}", customOAuth2User.getNickname());
 
             // JWT 토큰 생성
             log.info("🔐 JWT 토큰 생성 시작");
             String token = jwtUtil.generateToken(
-                customOAuth2User.getKakaoId(),
+                customOAuth2User.getOauth2Id(),
                 customOAuth2User.getNickname()
             );
             log.info("✅ JWT 토큰 생성 완료");
@@ -54,17 +55,11 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             response.setStatus(HttpServletResponse.SC_OK);
             
             // 응답 데이터 생성
-            Map<String, Object> responseData = new HashMap<>();
-            responseData.put("success", true);
-            responseData.put("message", "로그인 성공");
-            responseData.put("token", token);
-            responseData.put("user", Map.of(
-                "kakaoId", customOAuth2User.getKakaoId(),
-                "nickname", customOAuth2User.getNickname()
-            ));
-            
+            JWTResponse jwtResponse = new JWTResponse(
+                    true, token, customOAuth2User.getOauth2Id(), customOAuth2User.getNickname());
+
             log.info("📤 JSON 응답 전송");
-            objectMapper.writeValue(response.getWriter(), responseData);
+            objectMapper.writeValue(response.getWriter(), jwtResponse);
             log.info("✅ OAuth2 로그인 성공 처리 완료");
             
         } else {

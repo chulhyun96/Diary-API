@@ -33,15 +33,14 @@ public class CustomOAuth2User implements OAuth2User {
 
     @Override
     public String getName() {
-        return user.getKakaoId();
+        return user.getOauth2Id();
     }
 
-    public String getKakaoId() {
-        return user.getKakaoId();
+    public String getOauth2Id() {
+        return user.getOauth2Id();
     }
 
     public String getNickname() {
         return user.getNickname();
     }
-
 }

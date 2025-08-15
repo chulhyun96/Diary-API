@@ -6,10 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-@Repository
-public interface UserRepository extends JpaRepository<User, Long> {
-    
-    Optional<User> findByKakaoId(String kakaoId);
-    
-    boolean existsByKakaoId(String kakaoId);
+public interface UserRepository extends JpaRepository<User, byte[]> {
+
+
+    Optional<User> findByOauth2Id(String oauth2Id);
+
+    boolean existsByOauth2Id(String oauth2Id);
 } 

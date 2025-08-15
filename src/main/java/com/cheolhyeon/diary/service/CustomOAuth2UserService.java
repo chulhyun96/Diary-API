@@ -3,6 +3,8 @@ package com.cheolhyeon.diary.service;
 import com.cheolhyeon.diary.entity.User;
 import com.cheolhyeon.diary.repository.UserRepository;
 import com.cheolhyeon.diary.security.CustomOAuth2User;
+import com.cheolhyeon.diary.type.Oauth2ProviderOption;
+import com.cheolhyeon.diary.util.converter.UlidConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -12,6 +14,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -23,58 +26,47 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         log.info("🔄 OAuth2 사용자 정보 로드 시작");
-        
         OAuth2User oauth2User = super.loadUser(userRequest);
-        
         String provider = userRequest.getClientRegistration().getRegistrationId();
-        log.info("🔗 OAuth2 제공자: {}", provider);
-        log.info("📋 OAuth2 사용자 속성: {}", oauth2User.getAttributes());
-        
-        if ("kakao".equals(provider)) {
-            log.info("✅ 카카오 사용자 처리 시작");
-            return processKakaoUser(oauth2User);
+
+        Oauth2ProviderOption providerOpt = Oauth2ProviderOption.getOption(provider);
+        if (Objects.requireNonNull(providerOpt).getOption().equals(provider)) {
+            log.info("OAuth2 Provider : {}", providerOpt);
+            return processOauth2User(oauth2User);
         }
-        log.error("❌ 지원하지 않는 OAuth2 제공자: {}", provider);
         throw new OAuth2AuthenticationException("Unsupported provider: " + provider);
     }
 
-    private OAuth2User processKakaoUser(OAuth2User oauth2User) {
-        log.info("🔍 카카오 사용자 정보 처리 시작");
-        
+    private OAuth2User processOauth2User(OAuth2User oauth2User) {
+        log.info("🔍 OAuth2 사용자 정보 처리 시작");
         Map<String, Object> attributes = oauth2User.getAttributes();
-        
-        // 카카오 사용자 정보 추출 (nickname만)
-        String kakaoId = String.valueOf(attributes.get("id"));
+
+        String oauth2Id = String.valueOf(attributes.get("id"));
         Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
-        
-        String nickname = properties != null ? (String) properties.get("nickname") : "Unknown";
-        
-        log.info("👤 카카오 사용자 정보 추출 완료:");
-        log.info("   - 카카오 ID: {}", kakaoId);
-        log.info("   - 닉네임: {}", nickname);
 
-        // 사용자 정보 저장 또는 업데이트
-        User user = userRepository.findByKakaoId(kakaoId)
-                .orElse(User.builder()
-                        .kakaoId(kakaoId)
-                        .nickname(nickname)
-                        .email(null)  // 이메일 동의하지 않음
-                        .build());
+        String currentNickname = properties != null ? (String) properties.get("nickname") : "null";
 
-        if (user.getId() != null) {
-            log.info("🔄 기존 사용자 정보 업데이트 - 사용자 ID: {}", user.getId());
-            user.setNickname(nickname);
-            // 이메일과 프로필 이미지는 업데이트하지 않음 (동의하지 않음)
-        } else {
-            log.info("🆕 새로운 사용자 생성");
-        }
-        
-        user = userRepository.save(user);
-        log.info("💾 사용자 정보 저장 완료 - 사용자 ID: {}", user.getId());
-        
-        CustomOAuth2User customOAuth2User = new CustomOAuth2User(oauth2User, user);
-        log.info("✅ CustomOAuth2User 생성 완료");
-        
-        return customOAuth2User;
+        return userRepository.findByOauth2Id(oauth2Id)
+                .map(existingUser -> {
+                    // 기존 사용자가 있는 경우
+                    if (!currentNickname.equals(existingUser.getNickname())) {
+                        // 닉네임이 다른 경우: 업데이트 후 저장
+                        log.info("📝 닉네임 변경 감지 - 업데이트 진행");
+                        existingUser.updateNickname(currentNickname);
+                        User updatedUser = userRepository.save(existingUser);
+                        return new CustomOAuth2User(oauth2User, updatedUser);
+                    }
+                    // 닉네임이 같은 경우: 바로 반환
+                    log.info("✅ 닉네임 변경 없음 - 기존 정보 그대로 사용");
+                    return new CustomOAuth2User(oauth2User, existingUser);
+                })
+                .orElseGet(() -> {
+                    // 사용자가 없는 경우: 새로 생성
+                    log.info("🆕 새로운 사용자 생성");
+                    User newUser = User.createUser(UlidConverter.generateUlid(), oauth2Id, currentNickname);
+                    User savedUser = userRepository.save(newUser);
+                    log.info("💾 새 사용자 생성 완료 - 사용자 ID: {}", savedUser.getNickname());
+                    return new CustomOAuth2User(oauth2User, savedUser);
+                });
     }
 } 

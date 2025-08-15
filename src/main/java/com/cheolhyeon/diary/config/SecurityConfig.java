@@ -29,7 +29,6 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
-                    // 왜 stateless방식이 필요한가? 왜 JWT가 필요한가부터 정확히 짚고가기
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
