@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: dev # 실행 서버 지정
+  application:
+    name: diary-app
+  # OAuth2 설정
+#  security:
+#    oauth2:
+#      client:
+#        registration:
+#          kakao:
+#            client-id: ${KAKAO_CLIENT_ID:9b2d6412af07621709962b653139df4e}
+#            client-secret: ${KAKAO_CLIENT_SECRET:pPAD4ZZ3u3iU1wluJcexe9Evg0FNIkqu}
+#            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+#            authorization-grant-type: authorization_code
+#            client-authentication-method: client_secret_post
+#            scope:
+#              - profile_nickname
+#        provider:
+#          kakao:
+#            authorization-uri: https://kauth.kakao.com/oauth/authorize
+#            token-uri: https://kauth.kakao.com/oauth/token
+#            user-info-uri: https://kapi.kakao.com/v2/user/me
+#            user-name-attribute: id
+
+# JWT 설정
+jwt:
+  secret: ${JWT_SECRET:fl63X7JQkcAeiDobfsMT1hpe3c98nufFwwHILTmtdoeoC6ox33MXp+PoVeKgDdiPGHSAWz/mvatRCOAfghY1Vw==}
+  access_token_expiration: 600000 # 10분
+  refresh_token_expiration : 259200000 # 3일
+
+kakao:
+  client:
+    id: ${KAKAO_CLIENT_ID:9b2d6412af07621709962b653139df4e}
+    secreat: ${KAKAO_CLIENT_SECRET:pPAD4ZZ3u3iU1wluJcexe9Evg0FNIkqu}
+
+
+

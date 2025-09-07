@@ -1,0 +1,34 @@
+spring:
+  # 데이터베이스 설정
+  datasource:
+    url: jdbc:mysql://localhost:3306/diary?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
+
+
+# 로깅 설정
+logging:
+  level:
+    com.cheolhyeon.diary: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+    org.springframework.web.client: DEBUG
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000 # 3-way-handshake 과정이 5초내로 이뤄지지 않으면 에러발생
+        readTimeout: 5000 # 연결은 됐는데 응답이 오지 않는 경우

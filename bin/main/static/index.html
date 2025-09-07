@@ -155,8 +155,49 @@
         let currentToken = null;
 
         function kakaoLogin() {
-            // 카카오 OAuth2 로그인 페이지로 리다이렉트
-            window.location.href = '/oauth2/authorization/kakao';
+            // 카카오 OAuth2 인증 페이지로 리다이렉트
+            const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=YOUR_KAKAO_CLIENT_ID&redirect_uri=${encodeURIComponent(window.location.origin + '/api/auth/login/callback')}&response_type=code`;
+            window.location.href = kakaoAuthUrl;
+        }
+
+        // 카카오 인증 콜백 처리
+        function handleKakaoCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            
+            if (code) {
+                // /login API 호출
+                fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `code=${code}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // JWT 토큰을 localStorage에 저장
+                        localStorage.setItem('jwt_token', data.accessToken);
+                        currentToken = data.accessToken;
+                        
+                        // 사용자 정보 표시
+                        document.getElementById('kakaoId').textContent = data.oauth2Id || 'N/A';
+                        document.getElementById('nickname').textContent = data.nickname || 'N/A';
+                        document.getElementById('jwtToken').textContent = data.accessToken;
+                        document.getElementById('userInfo').style.display = 'block';
+                        
+                        // URL에서 코드 파라미터 제거
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    } else {
+                        alert('로그인 실패');
+                    }
+                })
+                .catch(error => {
+                    console.error('로그인 오류:', error);
+                    alert('로그인 중 오류가 발생했습니다.');
+                });
+            }
         }
 
         function logout() {

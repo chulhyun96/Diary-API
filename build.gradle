@@ -4,6 +4,10 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
+ext {
+    springCloudVersion = "2025.0.0"
+}
+
 group = 'com.cheolhyeon'
 version = '0.0.1-SNAPSHOT'
 
@@ -30,12 +34,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     
     // JWT 토큰 지원 (12.3 버전)
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
-
-    // ULID 생성 라이브러리
-    implementation 'com.github.f4b6a3:ulid-creator:5.2.2'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -45,6 +47,12 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
+    }
 }
 
 tasks.named('test') {
