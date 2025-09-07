@@ -1,4 +1,4 @@
-package com.cheolhyeon.diary.auth.external;
+package com.cheolhyeon.diary.app.feign.external;
 
 import com.cheolhyeon.diary.auth.dto.request.KakaoTokenRequest;
 import com.cheolhyeon.diary.auth.dto.response.KakaoTokenResponse;

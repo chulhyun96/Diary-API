@@ -11,9 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class KakaoTokenRequest {
-    private String grantType;
-    private String clientId;
-    private String redirectUri;
+    private String grant_type;
+    private String client_id;
+    private String redirect_uri;
     private String code;
-    private String clientSecret;
+    private String client_secret;
 }
