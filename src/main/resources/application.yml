@@ -15,6 +15,7 @@ kakao:
   client:
     id: ${KAKAO_CLIENT_ID:9b2d6412af07621709962b653139df4e}
     secret: ${KAKAO_CLIENT_SECRET:pPAD4ZZ3u3iU1wluJcexe9Evg0FNIkqu}
+    redirect_url : http://localhost:8080/login/oauth2/code/kakao
 
 feign:
   client:
