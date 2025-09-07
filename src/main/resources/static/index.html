@@ -11,11 +11,9 @@
 
 <div className="login-section">
     <button className="kakao-login-btn" onClick="function kakaoLogin() {
-        // 이게 카카오 API 서버에 인가 코드 요청을 하는거임.
-        // 그럼 카카오가 우리 서버의 id랑 우리 서버에서 등록한 리다이렉트url을 받아서 자기네 서버쪽에서 우리 서버가 진짜 등록한 사람인지 확인함
-        // 그럼 확인이 되면 로그인 페이지를 넘겨서 로그인하고, 인가코드를 넘겨줌 -> 해당 흐름맞는지 물어보기
+
 window.location.href =
-            `https://kauth.kakao.com/oauth/authorize?client_id=9b2d6412af07621709962b653139df4e&redirect_uri=http://localhost:8080/login/oauth2/code/kakao&response_type=code`;
+            `/login`;
     }
     kakaoLogin()">
         🟡 카카오로 로그인 (닉네임만)
