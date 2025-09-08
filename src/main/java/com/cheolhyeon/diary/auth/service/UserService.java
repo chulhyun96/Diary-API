@@ -5,15 +5,20 @@ import com.cheolhyeon.diary.auth.dto.response.KakaoTokenResponse;
 import com.cheolhyeon.diary.auth.dto.response.KakaoUserInfoResponse;
 import com.cheolhyeon.diary.app.feign.external.KakaoApiClient;
 import com.cheolhyeon.diary.app.feign.external.KakaoTokenClient;
+import com.cheolhyeon.diary.auth.entity.User;
+import com.cheolhyeon.diary.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class LoginService {
+@Transactional(readOnly = true)
+public class UserService {
     private final KakaoTokenClient kakaoTokenClient;
     private final KakaoApiClient kakaoApiClient;
+    private final UserRepository userRepository;
 
     @Value("${kakao.client.id}")
     private String kakaoClientId;
@@ -22,7 +27,8 @@ public class LoginService {
     @Value("${kakao.client.redirect_url}")
     private String redirectUrl;
 
-    public KakaoUserInfoResponse getKakaoLoginCode(String code) {
+    @Transactional
+    public KakaoUserInfoResponse processLogin(String code) {
         String contentType = "application/x-www-form-urlencoded;charset=UTF-8";
         KakaoTokenRequest authKakaoServer = KakaoTokenRequest.builder()
                 .client_id(kakaoClientId)
@@ -32,7 +38,18 @@ public class LoginService {
                 .redirect_uri(redirectUrl)
                 .build();
         KakaoTokenResponse token = kakaoTokenClient.getToken(contentType, authKakaoServer);
-        return kakaoApiClient.getMe("Bearer " + token.getAccess_token());
+        KakaoUserInfoResponse client = kakaoApiClient.getMe("Bearer " + token.getAccess_token());
+
+        userRepository.findById(client.getId())
+                .map(existedUser -> {
+                    existedUser.updateLastLoginTime();
+                    return userRepository.save(existedUser);
+                })
+                .orElseGet(() -> {
+                    User newUser = User.createUser(client);
+                    return userRepository.save(newUser);
+                });
+        return client;
     }
 
     public String getLoginUrl() {

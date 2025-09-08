@@ -39,17 +39,26 @@ build/
 .env.production
 
 # 스프링부트 환경별 설정 파일 (보안 정보 포함)
-src/main/resources/application.yml
-src/main/resources/application-dev.yaml
+src/main/resources/application*.yml
+src/main/resources/application*.yaml
+src/main/resources/application-dev.yml
+src/main/resources/application-prod.yml
+src/main/resources/application-test.yml
+src/main/resources/application-test.yaml
 
-# 공통 설정 파일은 예외로 포함
-!src/main/resources/application.yaml
-!src/main/resources/application.yml
+# Gradle 관련 파일들
+.gradle/
+gradle/
+gradlew
+gradlew.bat
+build.gradle
+settings.gradle
+gradle.properties
 
 # 빌드 결과물 및 캐시
 bin/
-.gradle/
 build/
+target/
 
 # 로그 파일
 *.log
