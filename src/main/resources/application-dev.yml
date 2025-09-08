@@ -32,3 +32,4 @@ feign:
       default:
         connectTimeout: 5000 # 3-way-handshake 과정이 5초내로 이뤄지지 않으면 에러발생
         readTimeout: 5000 # 연결은 됐는데 응답이 오지 않는 경우
+        loggerLevel: full
