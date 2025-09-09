@@ -1,4 +1,4 @@
-package com.cheolhyeon.diary.auth.component;
+package com.cheolhyeon.diary.app.properties;
 
 import com.cheolhyeon.diary.auth.dto.request.KakaoTokenRequest;
 import lombok.Getter;
@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 @Setter
 @Component
 @ConfigurationProperties(prefix = "kakao.client")
-public class KakaoApiComponent {
+public class KakaoApiProperties {
     private String id;
     private String secret;
     private String redirectUrl;
