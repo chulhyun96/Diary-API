@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class User {
     @Id
     @Column(name = "kakao_id")
-    private Long kakaoId;  // 필드명도 올바르게 수정
+    private Long kakaoId;
     
     @Column(name = "email")
     private String email;
