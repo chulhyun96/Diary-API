@@ -17,6 +17,6 @@ public class TokenService {
     public JwtResponse createJwt(Long kakaoId) {
         JwtRequest jwt = jwtProvider.createJwt(kakaoId);
         UsersJwt newToken = tokenRepository.save(UsersJwt.create(jwt));
-        return JwtResponse.createJwtResponse(newToken.getAccessToken(), newToken.getRefreshExpiresAt());
+    return JwtResponse.createJwtResponse(newToken.getAccessToken(), newToken.getRefreshExpiresAt());
     }
 }
