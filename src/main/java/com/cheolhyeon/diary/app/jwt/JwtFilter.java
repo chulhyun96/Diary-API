@@ -1,3 +1,4 @@
+/*
 package com.cheolhyeon.diary.app.jwt;
 
 import com.cheolhyeon.diary.token.TokenRepository;
@@ -64,3 +65,4 @@ public class JwtFilter extends OncePerRequestFilter {
         // 6) 예외 발생 시 적절한 에러 응답 처리
     }
 }
+*/

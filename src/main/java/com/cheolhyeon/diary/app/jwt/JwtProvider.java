@@ -1,7 +1,7 @@
 package com.cheolhyeon.diary.app.jwt;
 
 import com.cheolhyeon.diary.app.properties.JwtProperties;
-import io.jsonwebtoken.Claims;
+import com.cheolhyeon.diary.token.dto.request.JwtRequest;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -16,61 +16,79 @@ import java.util.Date;
 @Component
 @RequiredArgsConstructor
 public class JwtProvider {
-    
+
     private final JwtProperties jwtProperties;
-    
+
     private SecretKey getSigningKey() {
         byte[] keyBytes = jwtProperties.getSecret().getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }
-    
-    public String generateAccessToken(Long userId) {
+
+    public JwtRequest createJwt(Long kakaoId) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtProperties.getAccessTokenExpiration());
-        
+        String accessToken = generateAccessToken(kakaoId);
+        String refreshToken = generateRefreshToken(kakaoId);
+        long refresh = getExpirationDate(now, "REFRESH");
+        return JwtRequest.builder()
+                .userId(kakaoId)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .createDate(now)
+                .refreshExpireDate(refresh)
+                .build();
+    }
+
+    private String generateAccessToken(Long userId) {
+        Date now = new Date();
+        Date expiryDate = new Date(getExpirationDate(now, "ACCESS"));
         return Jwts.builder()
-                .subject(String.valueOf(userId))
+                .subject("Access Token")
+                .claim("userId", userId)
                 .claim("type", "ACCESS")
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
                 .compact();
     }
-    
-    public String generateRefreshToken(Long userId) {
+
+    private String generateRefreshToken(Long userId) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtProperties.getRefreshTokenExpiration());
-        
+        Date expiryDate = new Date(getExpirationDate(now, "REFRESH"));
         return Jwts.builder()
-                .subject(String.valueOf(userId))
+                .subject("Refresh Token")
+                .claim("userId", userId)
                 .claim("type", "REFRESH")
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
                 .compact();
     }
-    
-    public Long getUserIdFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-        
-        return Long.parseLong(claims.getSubject());
+
+    private long getExpirationDate(Date now, String tokenType) {
+        if (tokenType.equals("REFRESH")) {
+            return now.getTime() + jwtProperties.getRefreshTokenExpiration();
+        }
+        return now.getTime() + jwtProperties.getAccessTokenExpiration();
     }
 
-    // 토큰 타입 확인 (ACCESS 또는 REFRESH)
-    public String getTokenType(String token) {
-        Claims claims = Jwts.parser()
+    public Long getUserIdFromToken(String token) {
+        return (Long) Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
-                .getPayload();
-        
-        return claims.get("type", String.class);
+                .getPayload()
+                .get("userId");
     }
-    
+
+    public String getTokenType(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("type", String.class);
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
