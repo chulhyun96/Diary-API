@@ -5,6 +5,6 @@ import com.cheolhyeon.diary.app.exception.ErrorStatus;
 public class UserException extends RuntimeException {
 
     public UserException(ErrorStatus errorStatus) {
-        super(errorStatus.toString());
+        super(errorStatus.getErrorDescription());
     }
 }
