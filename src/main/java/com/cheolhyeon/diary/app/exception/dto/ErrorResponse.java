@@ -14,7 +14,7 @@ public class ErrorResponse {
     private final String errorDescription;
 
 
-    public static ErrorResponse create(ErrorStatus errorStatus) {
+    public static ErrorResponse of(ErrorStatus errorStatus) {
         return new ErrorResponse(
                 errorStatus.getErrorCode(),
                 errorStatus.getErrorMessage(),
