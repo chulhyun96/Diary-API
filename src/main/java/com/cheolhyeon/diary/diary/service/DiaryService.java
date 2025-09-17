@@ -1,7 +1,5 @@
 package com.cheolhyeon.diary.diary.service;
 
-import com.cheolhyeon.diary.app.exception.diary.DiaryErrorStatus;
-import com.cheolhyeon.diary.app.exception.diary.DiaryException;
 import com.cheolhyeon.diary.app.exception.user.UserErrorStatus;
 import com.cheolhyeon.diary.app.exception.user.UserException;
 import com.cheolhyeon.diary.auth.entity.User;
@@ -13,9 +11,10 @@ import com.cheolhyeon.diary.diary.repository.DiaryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,12 +31,25 @@ public class DiaryService {
         Long kakaoId = request.getWriterId();
         User writer = userRepository.findById(kakaoId)
                 .orElseThrow(() -> new UserException(UserErrorStatus.NOT_FOUND));
+
         List<String> keys = new ArrayList<>();
-        try {
-            keys = s3Service.upload(writer.getKakaoId(), images);
-        } catch (IOException e) {
-            throw new DiaryException(DiaryErrorStatus.FAILED_SAVE); // 이미지 업로드 실패시 전체 롤백
-        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    keys.forEach(k -> {
+                        try {
+                            s3Service.delete(k);
+                        } catch (Exception ignore) {
+                            // 옵션: 추후 재시도용
+                        }
+                    });
+                }
+            }
+        });
+
+        List<String> upload = s3Service.upload(writer.getKakaoId(), images);
+        keys.addAll(upload);
         Diaries entity = DiaryRequest.toEntity(kakaoId, writer.getDisplayName(), keys, request);
         return DiaryResponse.toResponse(diaryRepository.save(entity));
     }
