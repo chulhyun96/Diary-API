@@ -26,10 +26,12 @@ public class DiaryRequest {
     private String tags;
 
 
-    public static Diaries toEntity(Long kakaoId, String displayName, List<String> s3Key, DiaryRequest request) {
-        return new Diaries(kakaoId, displayName, request.getTitle(),
-                request.getContent(), request.getMood(), request.getWeather(),
-                request.getLocation(), request.getTags(), s3Key,
-                LocalDateTime.now(), LocalDateTime.now(), null);
+    public static Diaries toEntity(byte[] diaryId,Long kakaoId, String displayName, List<String> s3Key, DiaryRequest request) {
+        return new Diaries(
+                diaryId, kakaoId, displayName, request.getTitle(),
+                request.getContent(), request.getMood(),
+                request.getWeather(), request.getLocation(),
+                request.getTags(), s3Key, LocalDateTime.now(),
+                LocalDateTime.now(), null);
     }
 }
