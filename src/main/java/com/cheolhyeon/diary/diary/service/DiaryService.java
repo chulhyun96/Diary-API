@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 @Service
@@ -29,6 +31,8 @@ public class DiaryService {
 
     @Transactional
     public DiaryResponse createDiary(DiaryRequest request, List<MultipartFile> images) {
+        // Authentication에서 kakaoId를 빼오는 방향으로 재설계 해야함.
+        // request에서 getWriterId 필드 제거 해야함.
         Long kakaoId = request.getWriterId();
         User writer = userRepository.findById(kakaoId)
                 .orElseThrow(() -> new UserException(UserErrorStatus.NOT_FOUND));
@@ -39,5 +43,15 @@ public class DiaryService {
         byte[] ulid = UlidGenerator.generatorUlid();
         Diaries entity = DiaryRequest.toEntity(ulid, kakaoId, writer.getDisplayName(), keys, request);
         return DiaryResponse.toResponse(diaryRepository.save(entity));
+    }
+
+    public List<DiaryResponse> readDiary(Long kakaoId, int year, int month) {
+        // Authentication KakaoId
+        YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDateTime start = yearMonth.atDay(1).atStartOfDay();
+        LocalDateTime end = yearMonth.plusMonths(1).atDay(1).atStartOfDay();
+        diaryRepository.findByMonth(kakaoId, start, end);
+        return null;
+
     }
 }
