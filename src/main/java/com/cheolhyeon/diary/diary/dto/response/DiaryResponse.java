@@ -16,6 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DiaryResponse {
+    private byte[] diaryId;
     private String displayName;
     private String title;
     private String content;
@@ -27,8 +28,9 @@ public class DiaryResponse {
 
     public static DiaryResponse toResponse(Diaries entity) {
         return new DiaryResponse(
-                entity.getWriter(), entity.getTitle(), entity.getContent(),
-                entity.getMood(), entity.getWeather(), entity.getImageKeysJson(),
-                entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getDiaryId(), entity.getWriter(), entity.getTitle(),
+                entity.getContent(), entity.getMood(), entity.getWeather(),
+                entity.getImageKeysJson(), entity.getCreatedAt(), entity.getUpdatedAt()
+        );
     }
 }
