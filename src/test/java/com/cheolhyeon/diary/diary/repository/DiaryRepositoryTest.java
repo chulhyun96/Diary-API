@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,20 +32,26 @@ class DiaryRepositoryTest {
     void setUp() {
         diaryRepository.deleteAll(); // 일단 전부 조회해서 영속성 컨텍스트에 올린 뒤 삭제하기 때문에 findAll과 같은 쿼리가 발생한다.
         testStart = LocalDateTime.of(2024, 1, 1, 0, 0, 0);
-        testEnd = LocalDateTime.of(2024, 1, 31, 23, 59, 59);
+        testEnd = LocalDateTime.of(2024, 1, 1, 23, 59, 59);
     }
     @Test
-    @DisplayName("특정 Month에 조회된 일기")
+    @DisplayName("특정 Month, Day에 조회된 일기")
     void findByMonth() {
         //given
         byte[] id1 = UlidGenerator.generatorUlid();
         byte[] id2 = UlidGenerator.generatorUlid();
         byte[] id3 = UlidGenerator.generatorUlid();
-        createTestDiary(id1,"일기1",testStart.plusDays(5));
-        createTestDiary(id2,"일기2",testStart.plusDays(10));
-        createTestDiary(id3,"일기3",testStart.plusDays(15));
+        LocalDate currentDate = LocalDate.of(2024, 1, 1);
+        LocalDateTime startDay = currentDate.atStartOfDay();
+        LocalDateTime endDay = startDay.plusDays(1);
+
+        createTestDiary(id1,"일기1",testStart.plusHours(1));
+        createTestDiary(id2,"일기2",testStart.plusHours(2));
+        createTestDiary(id3,"일기3",testStart.plusHours(3));
+
         //when
-        List<Diaries> result = diaryRepository.findByMonth(1L, testStart, testEnd);
+        List<Diaries> result = diaryRepository.findByMonthAndDay(
+                1L,startDay, endDay);
 
         //then
         Assertions.assertEquals(3, result.size());
