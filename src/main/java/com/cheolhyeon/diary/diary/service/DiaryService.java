@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.util.List;
 
 @Service
@@ -28,13 +28,13 @@ public class DiaryService {
     private final DiaryRepository diaryRepository;
     private final UserRepository userRepository;
     private final S3Service s3Service;
+    private final Long kakaoId = 4384897461L;
 
     @Transactional
     public DiaryResponse createDiary(DiaryRequest request, List<MultipartFile> images) {
         // Authentication에서 kakaoId를 빼오는 방향으로 재설계 해야함.
         // request에서 getWriterId 필드 제거 해야함.
-        Long kakaoId = request.getWriterId();
-        User writer = userRepository.findById(kakaoId)
+        User writer = userRepository.findById(kakaoId) // 얘도 아마 제거 될 것임
                 .orElseThrow(() -> new UserException(UserErrorStatus.NOT_FOUND));
 
         List<String> keys = s3Service.upload(writer.getKakaoId(), images);
@@ -45,13 +45,17 @@ public class DiaryService {
         return DiaryResponse.toResponse(diaryRepository.save(entity));
     }
 
-    public List<DiaryResponse> readDiary(Long kakaoId, int year, int month) {
-        // Authentication KakaoId
-        YearMonth yearMonth = YearMonth.of(year, month);
-        LocalDateTime start = yearMonth.atDay(1).atStartOfDay();
-        LocalDateTime end = yearMonth.plusMonths(1).atDay(1).atStartOfDay();
-        diaryRepository.findByMonth(kakaoId, start, end);
-        return null;
+    public List<DiaryResponse> readDiaryByMonthAndDay(int year, int month, int day) {
+        LocalDate currentDate = LocalDate.of(year, month, day);
+        LocalDateTime startDay = currentDate.atStartOfDay();
+        LocalDateTime endDay = startDay.plusDays(1);
 
+        List<Diaries> diariesByMonth = diaryRepository.findByMonthAndDay(
+                kakaoId, startDay, endDay);
+        // 각각의 다이어리가 있고, 거기에 각각의 썸네일들이 있을 것임. 썸네일 택안했으면 그냥 없어도 되는거.
+        // 왜냐면 여기서는 썸네일 이미지 한장이랑, 다이어리의 데이터만 넘기면 되는것임.
+        // 썸네일 이미지 한장(없으면 없는데로) + 기본 DiaryResponse의 데이터들을 List로 반환하면 된다.
+        s3Service.getThumbnail(diariesByMonth);
+        return null;
     }
 }

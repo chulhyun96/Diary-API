@@ -16,7 +16,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class DiaryRequest {
-    private Long writerId;
     private String writer;
     private String title;
     private String content;
