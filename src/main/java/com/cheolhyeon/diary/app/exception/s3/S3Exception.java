@@ -1,4 +1,4 @@
-package com.cheolhyeon.diary.app.exception.diary;
+package com.cheolhyeon.diary.app.exception.s3;
 
 import com.cheolhyeon.diary.app.exception.ErrorStatus;
 import lombok.extern.slf4j.Slf4j;
