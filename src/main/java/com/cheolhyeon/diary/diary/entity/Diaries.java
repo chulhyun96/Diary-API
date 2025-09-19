@@ -17,6 +17,8 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Diaries {
     @Id
+    @Column(columnDefinition = "binary(16)")
+    private byte[] diaryId;
     private Long writerId;
     private String writer;
     private String title;
