@@ -3,6 +3,7 @@ package com.cheolhyeon.diary.diary.dto.response;
 import com.cheolhyeon.diary.diary.entity.Diaries;
 import com.cheolhyeon.diary.diary.enums.Mood;
 import com.cheolhyeon.diary.diary.enums.Weather;
+import com.github.f4b6a3.ulid.Ulid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DiaryResponseByMonthAndDayRead {
-    private byte[] diaryId;
+    private String diaryIdString;
     private String displayName;
     private String title;
     private String content;
@@ -34,12 +35,18 @@ public class DiaryResponseByMonthAndDayRead {
         for (int i = 0; i < diariesByMonthAndDay.size(); i++) {
             Diaries diaries = diariesByMonthAndDay.get(i);
             String thumbnailUrl = i < thumbnailImage.size() ? thumbnailImage.get(i) : null;
-            
+            String diaryIdAsString = Ulid.from(diaries.getDiaryId()).toString();
             diaryResponses.add(new DiaryResponseByMonthAndDayRead(
-                    diaries.getDiaryId(), diaries.getWriter(),
-                    diaries.getTitle(), diaries.getContent(),
-                    diaries.getMood(), diaries.getWeather(),
-                    thumbnailUrl, diaries.getCreatedAt(), diaries.getUpdatedAt()));
+                    diaryIdAsString,
+                    diaries.getWriter(),
+                    diaries.getTitle(),
+                    diaries.getContent(),
+                    diaries.getMood(),
+                    diaries.getWeather(),
+                    thumbnailUrl,
+                    diaries.getCreatedAt(),
+                    diaries.getUpdatedAt()
+            ));
         }
         return diaryResponses;
     }

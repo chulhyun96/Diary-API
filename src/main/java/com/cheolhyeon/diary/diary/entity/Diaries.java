@@ -1,5 +1,6 @@
 package com.cheolhyeon.diary.diary.entity;
 
+import com.cheolhyeon.diary.diary.dto.response.Location;
 import com.cheolhyeon.diary.diary.enums.Mood;
 import com.cheolhyeon.diary.diary.enums.Weather;
 import jakarta.persistence.*;
@@ -32,11 +33,11 @@ public class Diaries {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
-    private String location;
+    private Location location;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
-    private String tagsJson;
+    private List<String> tagsJson;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
