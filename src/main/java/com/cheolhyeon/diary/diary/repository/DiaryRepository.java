@@ -8,14 +8,15 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface DiaryRepository extends JpaRepository<Diaries, byte[]> {
     @Query(value = """
             select d.* from diaries d
             where d.writer_id = :writerId
-            and d.updated_at >= :startDay
-            and d.updated_at < :endDay
-            ORDER BY d.updated_at DESC
+            and d.created_at >= :startDay
+            and d.created_at < :endDay
+            ORDER BY d.created_at DESC
             """,
             nativeQuery = true
     )
@@ -24,4 +25,6 @@ public interface DiaryRepository extends JpaRepository<Diaries, byte[]> {
             @Param("startDay") LocalDateTime startDay,
             @Param("endDay") LocalDateTime endDay
             ); // 2025/09/19 00:00 ~ 19 23:59
+
+    Optional<Diaries> findById(byte[] diaryId);
 }

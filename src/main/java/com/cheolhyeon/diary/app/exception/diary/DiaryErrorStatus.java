@@ -10,10 +10,10 @@ import org.springframework.http.HttpStatus;
 @ToString
 @AllArgsConstructor
 public enum DiaryErrorStatus implements ErrorStatus {
-    FAILED_SAVE(
-           HttpStatus.BAD_REQUEST.value(),
-            HttpStatus.BAD_REQUEST.getReasonPhrase(),
-            "이미지 저장 실패."
+    NOT_FOUND(
+            HttpStatus.NOT_FOUND.value(),
+            HttpStatus.NOT_FOUND.getReasonPhrase(),
+            "해당 일기를 찾을 수 없습니다."
     );
     private final int errorCode;
     private final String errorMessage;

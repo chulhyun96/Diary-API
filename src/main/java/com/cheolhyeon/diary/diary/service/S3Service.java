@@ -32,17 +32,17 @@ public class S3Service {
             for (int i = 0; i < images.size(); i++) {
                 MultipartFile image = images.get(i);
 
-                String key = generateKey(writerId, image.getOriginalFilename(), diaryId,i + 1);
+                String key = generateKey(writerId, image.getOriginalFilename(), diaryId, i + 1);
                 keys.add(key);
                 s3Template.upload(bucketName, key, image.getInputStream());
             }
         } catch (Exception e) {
-            String errorMessageS3Key = "";
+            List<String> failedKeys = new ArrayList<>();
             for (String k : keys) {
-                errorMessageS3Key = k;
+                failedKeys.add(k);
                 delete(k);
             }
-            throw new S3Exception(S3ErrorStatus.FAILED_UPLOAD_IMAGE, errorMessageS3Key);
+            throw new S3Exception(S3ErrorStatus.FAILED_UPLOAD_IMAGE, failedKeys);
         }
         return keys;
     }
@@ -69,7 +69,7 @@ public class S3Service {
 
     public List<String> getThumbnailImageKey(Long writerId, int year, int month, int day, List<Diaries> diariesByMonth) {
         List<String> thumbnailImage = new ArrayList<>();
-        
+
         for (Diaries diaries : diariesByMonth) {
             String diaryId = UUID.nameUUIDFromBytes(diaries.getDiaryId()).toString();
             String prefix = String.format("diary_service/%d/%s/%d/%02d/%02d/", writerId, diaryId, year, month, day);
@@ -86,12 +86,16 @@ public class S3Service {
         return thumbnailImage;
     }
 
-    public List<String> createImageUrl(List<String> thumbnailImageKey) {
+    public List<String> createImageUrl(List<String> imageJsonArray) {
         List<String> imageUrl = new ArrayList<>();
-        for (String thumbnailKey : thumbnailImageKey) {
-            URL signedGetURL = s3Template.createSignedGetURL(bucketName, thumbnailKey, Duration.ofMinutes(10L));
-            String url = signedGetURL.toString();
-            imageUrl.add(url);
+        try {
+            for (String imageJson : imageJsonArray) {
+                URL signedGetURL = s3Template.createSignedGetURL(bucketName, imageJson, Duration.ofMinutes(10L));
+                String url = signedGetURL.toString();
+                imageUrl.add(url);
+            }
+        } catch (Exception e) {
+            throw new S3Exception(S3ErrorStatus.FAILED_LOAD_IMAGE, imageJsonArray);
         }
         return imageUrl;
     }
