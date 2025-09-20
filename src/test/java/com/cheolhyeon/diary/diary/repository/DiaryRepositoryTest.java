@@ -68,7 +68,7 @@ class DiaryRepositoryTest {
                 .content("테스트 내용")
                 .mood(Mood.HAPPY)
                 .weather(Weather.SUNNY)
-                .createdAt(updatedAt.minusDays(1))
+                .createdAt(updatedAt)
                 .updatedAt(updatedAt)
                 .build();
         diaryRepository.save(diary);
