@@ -26,13 +26,11 @@ class DiaryRepositoryTest {
     private DiaryRepository diaryRepository;
 
     private LocalDateTime testStart;
-    private LocalDateTime testEnd;
 
     @BeforeEach
     void setUp() {
-        diaryRepository.deleteAll(); // 일단 전부 조회해서 영속성 컨텍스트에 올린 뒤 삭제하기 때문에 findAll과 같은 쿼리가 발생한다.
+        diaryRepository.deleteAll();
         testStart = LocalDateTime.of(2024, 1, 1, 0, 0, 0);
-        testEnd = LocalDateTime.of(2024, 1, 1, 23, 59, 59);
     }
     @Test
     @DisplayName("특정 Month, Day에 조회된 일기")

@@ -8,6 +8,7 @@ import com.cheolhyeon.diary.auth.repository.UserRepository;
 import com.cheolhyeon.diary.diary.dto.S3RollbackCleanup;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryRequest;
 import com.cheolhyeon.diary.diary.dto.response.DiaryResponse;
+import com.cheolhyeon.diary.diary.dto.response.DiaryResponseRead;
 import com.cheolhyeon.diary.diary.entity.Diaries;
 import com.cheolhyeon.diary.diary.repository.DiaryRepository;
 import lombok.RequiredArgsConstructor;
@@ -45,18 +46,15 @@ public class DiaryService {
         return DiaryResponse.toResponse(diaryRepository.save(entity));
     }
 
-    public List<DiaryResponse> readDiaryByMonthAndDay(int year, int month, int day) {
+    public List<DiaryResponseRead> readDiariesByMonthAndDay(int year, int month, int day) {
         LocalDate currentDate = LocalDate.of(year, month, day);
         LocalDateTime startDay = currentDate.atStartOfDay();
         LocalDateTime endDay = startDay.plusDays(1);
 
         List<Diaries> diariesByMonth = diaryRepository.findByMonthAndDay(
                 writerId, startDay, endDay);
-        // 각각의 다이어리가 있고, 거기에 각각의 썸네일들이 있을 것임. 썸네일 택안했으면 그냥 없어도 되는거.
-        // 왜냐면 여기서는 썸네일 이미지 한장이랑, 다이어리의 데이터만 넘기면 되는것임.
-        // 썸네일 이미지 한장(없으면 없는데로) + 기본 DiaryResponse의 데이터들을 List로 반환하면 된다.
-        // 특정 Diary의 ID가 필요한가??????
-        s3Service.getThumbnail(writerId,year, month, day, diariesByMonth);
-        return null;
+        List<String> thumbnailImageKeys = s3Service.getThumbnailImageKey(writerId, year, month, day, diariesByMonth);
+        List<String> thumbnailImage = s3Service.createImageUrl(thumbnailImageKeys);
+        return DiaryResponseRead.toResponse(diariesByMonth, thumbnailImage);
     }
 }
