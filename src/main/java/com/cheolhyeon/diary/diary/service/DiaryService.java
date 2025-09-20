@@ -8,7 +8,7 @@ import com.cheolhyeon.diary.auth.repository.UserRepository;
 import com.cheolhyeon.diary.diary.dto.S3RollbackCleanup;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryRequest;
 import com.cheolhyeon.diary.diary.dto.response.DiaryResponse;
-import com.cheolhyeon.diary.diary.dto.response.DiaryResponseRead;
+import com.cheolhyeon.diary.diary.dto.response.DiaryResponseByMonthAndDayRead;
 import com.cheolhyeon.diary.diary.entity.Diaries;
 import com.cheolhyeon.diary.diary.repository.DiaryRepository;
 import lombok.RequiredArgsConstructor;
@@ -46,15 +46,15 @@ public class DiaryService {
         return DiaryResponse.toResponse(diaryRepository.save(entity));
     }
 
-    public List<DiaryResponseRead> readDiariesByMonthAndDay(int year, int month, int day) {
+    public List<DiaryResponseByMonthAndDayRead> readDiariesByMonthAndDay(int year, int month, int day) {
         LocalDate currentDate = LocalDate.of(year, month, day);
         LocalDateTime startDay = currentDate.atStartOfDay();
         LocalDateTime endDay = startDay.plusDays(1);
 
-        List<Diaries> diariesByMonth = diaryRepository.findByMonthAndDay(
+        List<Diaries> diariesByMonthAndDay = diaryRepository.findByMonthAndDay(
                 writerId, startDay, endDay);
-        List<String> thumbnailImageKeys = s3Service.getThumbnailImageKey(writerId, year, month, day, diariesByMonth);
+        List<String> thumbnailImageKeys = s3Service.getThumbnailImageKey(writerId, year, month, day, diariesByMonthAndDay);
         List<String> thumbnailImage = s3Service.createImageUrl(thumbnailImageKeys);
-        return DiaryResponseRead.toResponse(diariesByMonth, thumbnailImage);
+        return DiaryResponseByMonthAndDayRead.toResponse(diariesByMonthAndDay, thumbnailImage);
     }
 }

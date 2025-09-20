@@ -12,7 +12,7 @@ import java.util.List;
 public interface DiaryRepository extends JpaRepository<Diaries, byte[]> {
     @Query(value = """
             select d.* from diaries d
-            where d.writer_id = :kakaoId
+            where d.writer_id = :writerId
             and d.updated_at >= :startDay
             and d.updated_at < :endDay
             ORDER BY d.updated_at DESC
@@ -20,7 +20,7 @@ public interface DiaryRepository extends JpaRepository<Diaries, byte[]> {
             nativeQuery = true
     )
     List<Diaries> findByMonthAndDay(
-            @Param("kakaoId") Long kakaoId,
+            @Param("writerId") Long writerId,
             @Param("startDay") LocalDateTime startDay,
             @Param("endDay") LocalDateTime endDay
             ); // 2025/09/19 00:00 ~ 19 23:59

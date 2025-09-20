@@ -2,7 +2,7 @@ package com.cheolhyeon.diary.diary.controller;
 
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryRequest;
 import com.cheolhyeon.diary.diary.dto.response.DiaryResponse;
-import com.cheolhyeon.diary.diary.dto.response.DiaryResponseRead;
+import com.cheolhyeon.diary.diary.dto.response.DiaryResponseByMonthAndDayRead;
 import com.cheolhyeon.diary.diary.service.DiaryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +30,9 @@ public class DiaryController {
     }
 
     @GetMapping("/api/diary/{year}/{month}/{day}")
-    public ResponseEntity<List<DiaryResponseRead>> getDiariesByMonthAndDay(
+    public ResponseEntity<List<DiaryResponseByMonthAndDayRead>> getDiariesByMonthAndDay(
             @PathVariable int year, @PathVariable int month, @PathVariable int day) {
-        List<DiaryResponseRead> diaryResponseReads = diaryService.readDiariesByMonthAndDay(year, month, day);
-        return ResponseEntity.status(HttpStatus.OK).body(diaryResponseReads);
+        List<DiaryResponseByMonthAndDayRead> diaryResponseByMonthAndDayReads = diaryService.readDiariesByMonthAndDay(year, month, day);
+        return ResponseEntity.status(HttpStatus.OK).body(diaryResponseByMonthAndDayReads);
     }
 }
