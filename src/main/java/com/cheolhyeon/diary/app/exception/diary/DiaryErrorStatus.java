@@ -6,10 +6,12 @@ import lombok.Getter;
 import lombok.ToString;
 import org.springframework.http.HttpStatus;
 
+import java.io.Serializable;
+
 @Getter
 @ToString
 @AllArgsConstructor
-public enum DiaryErrorStatus implements ErrorStatus {
+public enum DiaryErrorStatus implements ErrorStatus, Serializable {
     NOT_FOUND(
             HttpStatus.NOT_FOUND.value(),
             HttpStatus.NOT_FOUND.getReasonPhrase(),

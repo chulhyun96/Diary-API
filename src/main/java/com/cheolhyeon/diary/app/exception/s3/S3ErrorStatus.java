@@ -3,13 +3,16 @@ package com.cheolhyeon.diary.app.exception.s3;
 import com.cheolhyeon.diary.app.exception.ErrorStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import org.springframework.http.HttpStatus;
+
+import java.io.Serializable;
 
 @Getter
 @ToString
 @AllArgsConstructor
-public enum S3ErrorStatus implements ErrorStatus {
+public enum S3ErrorStatus implements ErrorStatus , Serializable {
     FAILED_UPLOAD_IMAGE(
             HttpStatus.BAD_REQUEST.value(),
             HttpStatus.BAD_REQUEST.getReasonPhrase(),

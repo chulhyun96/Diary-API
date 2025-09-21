@@ -13,7 +13,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserException.class)
-    public ErrorResponse handleUserException(ErrorStatus errorStatus) {
+    public ErrorResponse handleUserException(UserException e) {
+        ErrorStatus errorStatus = e.getErrorStatus();
         log.error("UserException ERROR CODE : {},  ERROR MESSAGE : {}, ERROR DESCRIPTION : {}",
                 errorStatus.getErrorCode(),
                 errorStatus.getErrorMessage(),
@@ -23,7 +24,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DiaryException.class)
-    public ErrorResponse handleDiaryException(ErrorStatus errorStatus) {
+    public ErrorResponse handleDiaryException(DiaryException e) {
+        ErrorStatus errorStatus = e.getErrorStatus();
         log.error("DiaryException ERROR CODE : {}, ERROR MESSAGE : {}, ERROR DESCRIPTION : {}",
                 errorStatus.getErrorCode(),
                 errorStatus.getErrorMessage(),
@@ -32,7 +34,8 @@ public class GlobalExceptionHandler {
         return ErrorResponse.of(errorStatus);
     }
     @ExceptionHandler(S3Exception.class)
-    public ErrorResponse handleS3Exception(ErrorStatus errorStatus) {
+    public ErrorResponse handleS3Exception(S3Exception e) {
+        ErrorStatus errorStatus = e.getErrorStatus();
         log.error("S3Exception ERROR CODE : {}, ERROR MESSAGE : {}, ERROR DESCRIPTION : {}",
                 errorStatus.getErrorCode(),
                 errorStatus.getErrorMessage(),

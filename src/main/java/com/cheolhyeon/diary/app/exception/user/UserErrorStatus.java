@@ -3,13 +3,16 @@ package com.cheolhyeon.diary.app.exception.user;
 import com.cheolhyeon.diary.app.exception.ErrorStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import org.springframework.http.HttpStatus;
+
+import java.io.Serializable;
 
 @Getter
 @ToString
 @AllArgsConstructor
-public enum UserErrorStatus implements ErrorStatus {
+public enum UserErrorStatus implements ErrorStatus, Serializable {
     NOT_FOUND(
             HttpStatus.NOT_FOUND.value(),
             HttpStatus.NOT_FOUND.getReasonPhrase(),

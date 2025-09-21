@@ -86,6 +86,26 @@ public class S3Service {
         return thumbnailImage;
     }
 
+    public List<String> getThumbnailImageKey(Long writerId, int year, int month, List<Diaries> diariesByMonth) {
+        List<String> thumbnailImage = new ArrayList<>();
+
+        for (Diaries diaries : diariesByMonth) {
+            String diaryId = UUID.nameUUIDFromBytes(diaries.getDiaryId()).toString();
+            // day 없이 월까지만 조회하는 prefix 생성
+            String prefix = String.format("diary_service/%d/%s/%d/%02d/", writerId, diaryId, year, month);
+
+            List<S3Resource> s3Resources = s3Template.listObjects(bucketName, prefix);
+            for (S3Resource s3Resource : s3Resources) {
+                String fullName = s3Resource.getFilename();
+                String filename = StringUtils.getFilename(fullName);
+                if (filename.startsWith("thumbnail_")) {
+                    thumbnailImage.add(fullName);
+                }
+            }
+        }
+        return thumbnailImage;
+    }
+
     public List<String> createImageUrl(List<String> imageJsonArray) {
         List<String> imageUrl = new ArrayList<>();
         try {
