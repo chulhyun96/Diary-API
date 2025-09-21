@@ -18,7 +18,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DiaryResponseByMonthAndDayRead {
+public class DiaryResponseByMonthAndDay {
     private String diaryIdString;
     private String displayName;
     private String title;
@@ -29,14 +29,14 @@ public class DiaryResponseByMonthAndDayRead {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static List<DiaryResponseByMonthAndDayRead> toResponse(List<Diaries> diariesByMonthAndDay, List<String> thumbnailImage) {
+    public static List<DiaryResponseByMonthAndDay> toResponse(List<Diaries> diariesByMonthAndDay, List<String> thumbnailImage) {
         // 나중에 코드 리팩토링 해야할듯.
-        List<DiaryResponseByMonthAndDayRead> diaryResponses = new ArrayList<>();
+        List<DiaryResponseByMonthAndDay> diaryResponses = new ArrayList<>();
         for (int i = 0; i < diariesByMonthAndDay.size(); i++) {
             Diaries diaries = diariesByMonthAndDay.get(i);
             String thumbnailUrl = i < thumbnailImage.size() ? thumbnailImage.get(i) : null;
             String diaryIdAsString = Ulid.from(diaries.getDiaryId()).toString();
-            diaryResponses.add(new DiaryResponseByMonthAndDayRead(
+            diaryResponses.add(new DiaryResponseByMonthAndDay(
                     diaryIdAsString,
                     diaries.getWriter(),
                     diaries.getTitle(),
