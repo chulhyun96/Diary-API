@@ -13,7 +13,8 @@ import com.cheolhyeon.diary.diary.dto.S3RollbackCleanup;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryCreateRequest;
 import com.cheolhyeon.diary.diary.dto.response.DiaryCreateResponse;
 import com.cheolhyeon.diary.diary.dto.response.DiaryResponseById;
-import com.cheolhyeon.diary.diary.dto.response.DiaryResponseByMonthAndDayRead;
+import com.cheolhyeon.diary.diary.dto.response.DiaryResponseByMonthAndDay;
+import com.cheolhyeon.diary.diary.dto.response.DiaryResponseByYearAndMonth;
 import com.cheolhyeon.diary.diary.dto.response.Location;
 import com.cheolhyeon.diary.diary.entity.Diaries;
 import com.cheolhyeon.diary.diary.enums.Mood;
@@ -92,7 +93,6 @@ class DiaryServiceTest {
                 .willReturn(Optional.of(mockUser));
         given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList())).willReturn(s3Keys);
         
-        // ArgumentCaptor를 사용하여 실제로 전달되는 Diaries 객체를 그대로 반환
         ArgumentCaptor<Diaries> diaryCaptor = ArgumentCaptor.forClass(Diaries.class);
         given(diaryRepository.save(diaryCaptor.capture())).willAnswer(invocation -> {
             return invocation.getArgument(0); // 전달받은 Diaries 객체를 그대로 반환
@@ -105,7 +105,6 @@ class DiaryServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getDiaryId()).isNotNull();
 
-        // Verify interactions
         verify(userRepository).findById(writerId);
         verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), eq(images));
         ArgumentCaptor<S3RollbackCleanup> eventCaptor = ArgumentCaptor.forClass(S3RollbackCleanup.class);
@@ -205,11 +204,12 @@ class DiaryServiceTest {
         given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList()))
                 .willThrow(new RuntimeException("S3 업로드 실패"));
 
-        // When & Then
+        // When
         assertThatThrownBy(() -> diaryService.createDiary(request, images))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("S3 업로드 실패");
 
+        // Then
         verify(userRepository).findById(writerId);
         verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList());
         verify(diaryRepository, never()).save(any(Diaries.class));
@@ -284,7 +284,7 @@ class DiaryServiceTest {
         given(s3Service.createImageUrl(thumbnailKeys))
                 .willReturn(thumbnailUrls);
         // When
-        List<DiaryResponseByMonthAndDayRead> result = diaryService.readDiariesByMonthAndDay(year, month, day);
+        List<DiaryResponseByMonthAndDay> result = diaryService.readDiariesByMonthAndDay(year, month, day);
 
         // Then
         assertThat(result).isNotNull();
@@ -316,7 +316,7 @@ class DiaryServiceTest {
                 .willReturn(List.of());
 
         // When
-        List<DiaryResponseByMonthAndDayRead> result = diaryService.readDiariesByMonthAndDay(year, month, day);
+        List<DiaryResponseByMonthAndDay> result = diaryService.readDiariesByMonthAndDay(year, month, day);
 
         // Then
         assertThat(result).isNotNull();
@@ -355,11 +355,11 @@ class DiaryServiceTest {
         given(s3Service.getThumbnailImageKey(writerId, year, month, day, Collections.singletonList(mockDiary)))
                 .willThrow(new RuntimeException("S3 썸네일 키 조회 실패"));
 
-        // When & Then
+        // When
         assertThatThrownBy(() -> diaryService.readDiariesByMonthAndDay(year, month, day))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("S3 썸네일 키 조회 실패");
-
+        // Then
         verify(diaryRepository).findByMonthAndDay(writerId, startDay, endDay);
         verify(s3Service).getThumbnailImageKey(writerId, year, month, day, Collections.singletonList(mockDiary));
         verify(s3Service, never()).createImageUrl(anyList());
@@ -374,11 +374,11 @@ class DiaryServiceTest {
         given(diaryRepository.findById(diaryId))
                 .willReturn(Optional.empty());
 
-        // When & Then
-        assertThatThrownBy(() -> diaryService.getDiaryById(diaryId))
+        // When
+        assertThatThrownBy(() -> diaryService.readDiaryById(diaryId))
                 .isInstanceOf(DiaryException.class)
                 .hasMessage(DiaryErrorStatus.NOT_FOUND.getErrorDescription());
-
+        // Then
         verify(diaryRepository).findById(diaryId);
         verify(s3Service, never()).createImageUrl(anyList());
     }
@@ -408,11 +408,12 @@ class DiaryServiceTest {
         given(s3Service.createImageUrl(anyList()))
                 .willThrow(new S3Exception(S3ErrorStatus.FAILED_UPLOAD_IMAGE, List.of("S3 이미지 URL 생성 실패")));
 
-        // When & Then
-        assertThatThrownBy(() -> diaryService.getDiaryById(diaryId))
+        // When
+        assertThatThrownBy(() -> diaryService.readDiaryById(diaryId))
                 .isInstanceOf(S3Exception.class)
                 .hasMessage(S3ErrorStatus.FAILED_UPLOAD_IMAGE.getErrorDescription());
 
+        // Then
         verify(diaryRepository).findById(diaryId);
         verify(s3Service).createImageUrl(mockDiary.getImageKeysJson());
     }
@@ -446,7 +447,7 @@ class DiaryServiceTest {
                 .willReturn(imageUrls);
 
         // When
-        DiaryResponseById result = diaryService.getDiaryById(diaryId);
+        DiaryResponseById result = diaryService.readDiaryById(diaryId);
 
         // Then
         assertThat(result).isNotNull();
@@ -461,5 +462,171 @@ class DiaryServiceTest {
 
         verify(diaryRepository).findById(diaryId);
         verify(s3Service).createImageUrl(imageKeys);
+    }
+
+    @Test
+    @DisplayName("년/월로 일기 조회 시 정확한 리스트 반환")
+    void readDiariesByYearAndMonth_Success_ReturnsCorrectList() {
+        // Given
+        int year = 2025;
+        int month = 9;
+        Long writerId = 4384897461L;
+        LocalDate searchDate = LocalDate.of(year, month, 1);
+        LocalDateTime startMonth = searchDate.atStartOfDay();
+        LocalDateTime endMonth = startMonth.plusMonths(1);
+
+        Diaries diary1 = Diaries.builder()
+                .diaryId(UlidGenerator.generatorUlid())
+                .writerId(writerId)
+                .writer("테스트유저1")
+                .title("9월 첫 번째 일기")
+                .content("9월 첫 번째 일기 내용")
+                .mood(Mood.HAPPY)
+                .weather(Weather.SUNNY)
+                .location(new Location())
+                .tagsJson(List.of("9월", "첫째"))
+                .imageKeysJson(List.of("key1", "key2"))
+                .createdAt(LocalDateTime.of(2025, 9, 5, 10, 30))
+                .updatedAt(LocalDateTime.of(2025, 9, 5, 10, 30))
+                .build();
+
+        Diaries diary2 = Diaries.builder()
+                .diaryId(UlidGenerator.generatorUlid())
+                .writerId(writerId)
+                .writer("테스트유저2")
+                .title("9월 두 번째 일기")
+                .content("9월 두 번째 일기 내용")
+                .mood(Mood.SAD)
+                .weather(Weather.RAIN)
+                .location(new Location())
+                .tagsJson(List.of("9월", "둘째"))
+                .imageKeysJson(List.of("key3", "key4"))
+                .createdAt(LocalDateTime.of(2025, 9, 15, 14, 20))
+                .updatedAt(LocalDateTime.of(2025, 9, 15, 14, 20))
+                .build();
+
+        List<Diaries> mockDiaries = List.of(diary1, diary2);
+        List<String> thumbnailKeys = List.of("thumbnail_key1", "thumbnail_key2");
+        List<String> thumbnailUrls = List.of("https://s3.url1", "https://s3.url2");
+
+        given(diaryRepository.findAllByYearAndMonth(writerId, startMonth, endMonth))
+                .willReturn(mockDiaries);
+        given(s3Service.getThumbnailImageKey(writerId, year, month, mockDiaries))
+                .willReturn(thumbnailKeys);
+        given(s3Service.createImageUrl(thumbnailKeys))
+                .willReturn(thumbnailUrls);
+
+        // When
+        List<DiaryResponseByYearAndMonth> result = diaryService.readDiariesByYearAndMonth(year, month);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+
+        // 첫 번째 일기 검증
+        DiaryResponseByYearAndMonth firstDiary = result.get(0);
+        assertThat(firstDiary.getDiaryIdString()).isNotNull();
+        assertThat(firstDiary.getDisplayName()).isEqualTo("테스트유저1");
+        assertThat(firstDiary.getTitle()).isEqualTo("9월 첫 번째 일기");
+        assertThat(firstDiary.getContent()).isEqualTo("9월 첫 번째 일기 내용");
+        assertThat(firstDiary.getMood()).isEqualTo(Mood.HAPPY);
+        assertThat(firstDiary.getWeather()).isEqualTo(Weather.SUNNY);
+        assertThat(firstDiary.getThumbnailUrl()).isEqualTo("https://s3.url1");
+        assertThat(firstDiary.getCreatedAt()).isEqualTo(LocalDateTime.of(2025, 9, 5, 10, 30));
+
+        // 두 번째 일기 검증
+        DiaryResponseByYearAndMonth secondDiary = result.get(1);
+        assertThat(secondDiary.getDiaryIdString()).isNotNull();
+        assertThat(secondDiary.getDisplayName()).isEqualTo("테스트유저2");
+        assertThat(secondDiary.getTitle()).isEqualTo("9월 두 번째 일기");
+        assertThat(secondDiary.getContent()).isEqualTo("9월 두 번째 일기 내용");
+        assertThat(secondDiary.getMood()).isEqualTo(Mood.SAD);
+        assertThat(secondDiary.getWeather()).isEqualTo(Weather.RAIN);
+        assertThat(secondDiary.getThumbnailUrl()).isEqualTo("https://s3.url2");
+        assertThat(secondDiary.getCreatedAt()).isEqualTo(LocalDateTime.of(2025, 9, 15, 14, 20));
+
+        verify(diaryRepository).findAllByYearAndMonth(writerId, startMonth, endMonth);
+        verify(s3Service).getThumbnailImageKey(writerId, year, month, mockDiaries);
+        verify(s3Service).createImageUrl(thumbnailKeys);
+    }
+
+    @Test
+    @DisplayName("년/월로 일기 조회 시 해당 월에 일기가 없으면 빈 리스트 반환")
+    void readDiariesByYearAndMonth_NoDiaries_ReturnsEmptyList() {
+        // Given
+        int year = 2025;
+        int month = 10;
+        Long writerId = 4384897461L;
+        LocalDate searchDate = LocalDate.of(year, month, 1);
+        LocalDateTime startMonth = searchDate.atStartOfDay();
+        LocalDateTime endMonth = startMonth.plusMonths(1);
+
+        List<Diaries> emptyDiaries = List.of();
+        List<String> emptyThumbnailKeys = List.of();
+        List<String> emptyThumbnailUrls = List.of();
+
+        // Mock 설정
+        given(diaryRepository.findAllByYearAndMonth(writerId, startMonth, endMonth))
+                .willReturn(emptyDiaries);
+        given(s3Service.getThumbnailImageKey(writerId, year, month, emptyDiaries))
+                .willReturn(emptyThumbnailKeys);
+        given(s3Service.createImageUrl(emptyThumbnailKeys))
+                .willReturn(emptyThumbnailUrls);
+
+        // When
+        List<DiaryResponseByYearAndMonth> result = diaryService.readDiariesByYearAndMonth(year, month);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+
+        // Mock 호출 검증
+        verify(diaryRepository).findAllByYearAndMonth(writerId, startMonth, endMonth);
+        verify(s3Service).getThumbnailImageKey(writerId, year, month, emptyDiaries);
+        verify(s3Service).createImageUrl(emptyThumbnailKeys);
+    }
+
+    @Test
+    @DisplayName("년/월로 일기 조회 시 S3 썸네일 키 조회 실패하면 예외 발생")
+    void readDiariesByYearAndMonth_S3ThumbnailKeyFailure_ThrowsException() {
+        // Given
+        int year = 2025;
+        int month = 9;
+        Long writerId = 4384897461L;
+        LocalDate searchDate = LocalDate.of(year, month, 1);
+        LocalDateTime startMonth = searchDate.atStartOfDay();
+        LocalDateTime endMonth = startMonth.plusMonths(1);
+
+        Diaries mockDiary = Diaries.builder()
+                .diaryId(UlidGenerator.generatorUlid())
+                .writerId(writerId)
+                .writer("테스트유저")
+                .title("테스트 일기")
+                .content("테스트 내용")
+                .mood(Mood.HAPPY)
+                .weather(Weather.SUNNY)
+                .location(new Location())
+                .tagsJson(List.of())
+                .imageKeysJson(List.of("key1"))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        List<Diaries> mockDiaries = List.of(mockDiary);
+
+        // Mock 설정
+        given(diaryRepository.findAllByYearAndMonth(writerId, startMonth, endMonth))
+                .willReturn(mockDiaries);
+        given(s3Service.getThumbnailImageKey(writerId, year, month, mockDiaries))
+                .willThrow(new S3Exception(S3ErrorStatus.FAILED_LOAD_IMAGE, List.of("S3 썸네일 키 조회 실패")));
+
+        // When
+        assertThatThrownBy(() -> diaryService.readDiariesByYearAndMonth(year, month))
+                .isInstanceOf(S3Exception.class)
+                .hasMessage(S3ErrorStatus.FAILED_LOAD_IMAGE.getErrorDescription());
+        // Then
+        verify(diaryRepository).findAllByYearAndMonth(writerId, startMonth, endMonth);
+        verify(s3Service).getThumbnailImageKey(writerId, year, month, mockDiaries);
+        verify(s3Service, never()).createImageUrl(anyList());
     }
 }

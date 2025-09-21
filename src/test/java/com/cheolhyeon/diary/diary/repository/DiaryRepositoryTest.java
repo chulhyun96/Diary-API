@@ -34,7 +34,7 @@ class DiaryRepositoryTest {
     }
     @Test
     @DisplayName("특정 Month, Day에 조회된 일기")
-    void findByMonth() {
+    void findByMonthAndDay() {
         //given
         byte[] id1 = UlidGenerator.generatorUlid();
         byte[] id2 = UlidGenerator.generatorUlid();
@@ -50,6 +50,32 @@ class DiaryRepositoryTest {
         //when
         List<Diaries> result = diaryRepository.findByMonthAndDay(
                 1L,startDay, endDay);
+
+        //then
+        Assertions.assertEquals(3, result.size());
+        //최신순 정렬
+        Assertions.assertEquals("일기3", result.get(0).getTitle());
+        Assertions.assertEquals("일기2", result.get(1).getTitle());
+        Assertions.assertEquals("일기1", result.get(2).getTitle());
+    }
+
+    @Test
+    @DisplayName("특정 Year, Month에 조회된 모든 일기")
+    void findByYearAndMonth() {
+        //given
+        byte[] id1 = UlidGenerator.generatorUlid();
+        byte[] id2 = UlidGenerator.generatorUlid();
+        byte[] id3 = UlidGenerator.generatorUlid();
+        LocalDate searchDate = LocalDate.of(2024, 1, 1);
+        LocalDateTime startMonth = searchDate.atStartOfDay();
+        LocalDateTime endMonth = startMonth.plusMonths(1);
+
+        createTestDiary(id1,"일기1",testStart.plusHours(1));
+        createTestDiary(id2,"일기2",testStart.plusDays(10));
+        createTestDiary(id3,"일기3",testStart.plusDays(15));
+
+        //when
+        List<Diaries> result = diaryRepository.findAllByYearAndMonth(1L, startMonth, endMonth);
 
         //then
         Assertions.assertEquals(3, result.size());
