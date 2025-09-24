@@ -1,5 +1,7 @@
 package com.cheolhyeon.diary.diary.controller;
 
+import com.cheolhyeon.diary.app.exception.diary.DiaryErrorStatus;
+import com.cheolhyeon.diary.app.exception.diary.DiaryException;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryCreateRequest;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryUpdateRequest;
 import com.cheolhyeon.diary.diary.dto.response.*;
@@ -20,7 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -287,5 +291,58 @@ class DiaryControllerTest {
         assertThat(result.getBody()).isNull();
 
         verify(diaryService).updateImages(diaryIdBytes, deleteImageKeys, updateImages);
+    }
+
+    @Test
+    @DisplayName("다이어리 삭제 API 테스트")
+    void deleteDiary_Success() {
+        // Given
+        String diaryId = "01K5GMK22MR1DZGJ0MD191NRJ6";
+        byte[] diaryIdBytes = Ulid.from(diaryId).toBytes();
+
+        // When
+        ResponseEntity<Void> result = diaryController.deleteDiary(diaryId);
+
+        // Then
+        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(result.getBody()).isNull();
+
+        verify(diaryService).deleteDiary(diaryIdBytes);
+    }
+
+    @Test
+    @DisplayName("다이어리 삭제 API - 다이어리 없음 예외 발생")
+    void deleteDiary_DiaryNotFound_ThrowsException() {
+        // Given
+        String diaryId = "01K5GMK22MR1DZGJ0MD191NRJ6";
+        byte[] diaryIdBytes = Ulid.from(diaryId).toBytes();
+
+        doThrow(new DiaryException(DiaryErrorStatus.NOT_FOUND))
+                .when(diaryService).deleteDiary(diaryIdBytes);
+
+        // When & Then
+        assertThatThrownBy(() -> diaryController.deleteDiary(diaryId))
+                .isInstanceOf(DiaryException.class)
+                .hasMessage(DiaryErrorStatus.NOT_FOUND.getErrorDescription());
+
+        verify(diaryService).deleteDiary(diaryIdBytes);
+    }
+
+    @Test
+    @DisplayName("다이어리 삭제 API - 이미 삭제된 다이어리 예외 발생")
+    void deleteDiary_AlreadyDeleted_ThrowsException() {
+        // Given
+        String diaryId = "01K5GMK22MR1DZGJ0MD191NRJ6";
+        byte[] diaryIdBytes = Ulid.from(diaryId).toBytes();
+
+        doThrow(new DiaryException(DiaryErrorStatus.ALREADY_DELETE))
+                .when(diaryService).deleteDiary(diaryIdBytes);
+
+        // When & Then
+        assertThatThrownBy(() -> diaryController.deleteDiary(diaryId))
+                .isInstanceOf(DiaryException.class)
+                .hasMessage(DiaryErrorStatus.ALREADY_DELETE.getErrorDescription());
+
+        verify(diaryService).deleteDiary(diaryIdBytes);
     }
 }

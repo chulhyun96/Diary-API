@@ -908,4 +908,77 @@ class DiaryServiceTest {
         verify(s3Service, never()).delete(anyString());
         verify(s3Service).upload(eq(1L), eq(diaryId), eq(newImages), anyInt(), anyInt(), anyInt());
     }
+
+    @Test
+    @DisplayName("다이어리 삭제 성공 테스트")
+    void deleteDiary_Success() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        Diaries existingDiary = Diaries.builder()
+                .diaryId(diaryId)
+                .writerId(1L)
+                .writer("테스트유저")
+                .title("테스트 제목")
+                .content("테스트 내용")
+                .mood(Mood.HAPPY)
+                .weather(Weather.SUNNY)
+                .imageKeysJson(List.of("key1", "key2"))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .deletedAt(null)
+                .build();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(existingDiary));
+
+        // When
+        diaryService.deleteDiary(diaryId);
+
+        // Then
+        verify(diaryRepository).findById(diaryId);
+        assertThat(existingDiary.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("다이어리 삭제 시 일기를 찾을 수 없으면 DiaryException 발생")
+    void deleteDiary_DiaryNotFound_ThrowsException() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> diaryService.deleteDiary(diaryId))
+                .isInstanceOf(DiaryException.class)
+                .hasMessage(DiaryErrorStatus.NOT_FOUND.getErrorDescription());
+
+        verify(diaryRepository).findById(diaryId);
+    }
+
+    @Test
+    @DisplayName("이미 삭제된 다이어리 삭제 시 DiaryException 발생")
+    void deleteDiary_AlreadyDeleted_ThrowsException() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        LocalDateTime alreadyDeletedAt = LocalDateTime.now().minusHours(1);
+        Diaries alreadyDeletedDiary = Diaries.builder()
+                .diaryId(diaryId)
+                .writerId(1L)
+                .writer("테스트유저")
+                .title("테스트 제목")
+                .content("테스트 내용")
+                .deletedAt(alreadyDeletedAt)
+                .build();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(alreadyDeletedDiary));
+
+        // When & Then
+        assertThatThrownBy(() -> diaryService.deleteDiary(diaryId))
+                .isInstanceOf(DiaryException.class)
+                .hasMessage(DiaryErrorStatus.ALREADY_DELETE.getErrorDescription());
+
+        verify(diaryRepository).findById(diaryId);
+    }
 }
