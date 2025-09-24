@@ -1,5 +1,6 @@
 package com.cheolhyeon.diary.diary.entity;
 
+import com.cheolhyeon.diary.diary.dto.reqeust.DiaryUpdateRequest;
 import com.cheolhyeon.diary.diary.dto.response.Location;
 import com.cheolhyeon.diary.diary.enums.Mood;
 import com.cheolhyeon.diary.diary.enums.Weather;
@@ -46,4 +47,15 @@ public class Diaries {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
+
+    public void update(DiaryUpdateRequest request) {
+        this.title = request.getTitle();
+        this.content = request.getContent();
+        this.mood = request.getMood();
+        this.tagsJson = request.getTags();
+    }
+
+    public void updateImageKeysJson(List<String> leftImageKeysJson) {
+        this.imageKeysJson = leftImageKeysJson;
+    }
 }
