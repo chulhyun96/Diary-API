@@ -24,11 +24,12 @@ public class DiaryResponseById {
     private Weather weather;
     private Location location;
     private List<String> tags;
-    private List<String> imagesJson;
+    private List<String> imageKeysJson;
+    private List<String> imageUrls;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static DiaryResponseById toResponse(Diaries diary, List<String> imageUrl) {
+    public static DiaryResponseById toResponse(Diaries diary, List<String> imageKeysJson, List<String> imageUrls) {
         return new DiaryResponseById(
                 diary.getDiaryId(),
                 diary.getWriter(),
@@ -38,7 +39,8 @@ public class DiaryResponseById {
                 diary.getWeather(),
                 diary.getLocation(),
                 diary.getTagsJson(),
-                imageUrl,
+                imageKeysJson,
+                imageUrls,
                 diary.getCreatedAt(),
                 diary.getUpdatedAt()
         );
