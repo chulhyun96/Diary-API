@@ -11,11 +11,8 @@ import com.cheolhyeon.diary.auth.entity.User;
 import com.cheolhyeon.diary.auth.repository.UserRepository;
 import com.cheolhyeon.diary.diary.dto.S3RollbackCleanup;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryCreateRequest;
-import com.cheolhyeon.diary.diary.dto.response.DiaryCreateResponse;
-import com.cheolhyeon.diary.diary.dto.response.DiaryResponseById;
-import com.cheolhyeon.diary.diary.dto.response.DiaryResponseByMonthAndDay;
-import com.cheolhyeon.diary.diary.dto.response.DiaryResponseByYearAndMonth;
-import com.cheolhyeon.diary.diary.dto.response.Location;
+import com.cheolhyeon.diary.diary.dto.reqeust.DiaryUpdateRequest;
+import com.cheolhyeon.diary.diary.dto.response.*;
 import com.cheolhyeon.diary.diary.entity.Diaries;
 import com.cheolhyeon.diary.diary.enums.Mood;
 import com.cheolhyeon.diary.diary.enums.Weather;
@@ -91,7 +88,7 @@ class DiaryServiceTest {
 
         given(userRepository.findById(writerId))
                 .willReturn(Optional.of(mockUser));
-        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList())).willReturn(s3Keys);
+        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt())).willReturn(s3Keys);
         
         ArgumentCaptor<Diaries> diaryCaptor = ArgumentCaptor.forClass(Diaries.class);
         given(diaryRepository.save(diaryCaptor.capture())).willAnswer(invocation -> {
@@ -106,7 +103,7 @@ class DiaryServiceTest {
         assertThat(result.getDiaryId()).isNotNull();
 
         verify(userRepository).findById(writerId);
-        verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), eq(images));
+        verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), eq(images), anyInt(), anyInt(), anyInt());
         ArgumentCaptor<S3RollbackCleanup> eventCaptor = ArgumentCaptor.forClass(S3RollbackCleanup.class);
         verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().getImageKeys()).isEqualTo(s3Keys);
@@ -135,7 +132,7 @@ class DiaryServiceTest {
                 .hasMessage(UserErrorStatus.NOT_FOUND.getErrorDescription());
 
         verify(userRepository).findById(writerId);
-        verify(s3Service, never()).upload(anyLong(), any(byte[].class), anyList());
+        verify(s3Service, never()).upload(anyLong(), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt());
         verify(diaryRepository, never()).save(any(Diaries.class));
     }
 
@@ -171,7 +168,7 @@ class DiaryServiceTest {
                 .build();
 
         given(userRepository.findById(writerId)).willReturn(Optional.of(mockUser));
-        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList())).willReturn(s3Keys);
+        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt())).willReturn(s3Keys);
         given(diaryRepository.save(any(Diaries.class))).willReturn(savedDiary);
 
         // When
@@ -181,7 +178,7 @@ class DiaryServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getDiaryId()).isNotNull();
 
-        verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), eq(images));
+        verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), eq(images), anyInt(), anyInt(), anyInt());
     }
 
     @Test
@@ -201,7 +198,7 @@ class DiaryServiceTest {
 
         given(userRepository.findById(writerId))
                 .willReturn(Optional.of(mockUser));
-        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList()))
+        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt()))
                 .willThrow(new RuntimeException("S3 업로드 실패"));
 
         // When
@@ -211,7 +208,7 @@ class DiaryServiceTest {
 
         // Then
         verify(userRepository).findById(writerId);
-        verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList());
+        verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt());
         verify(diaryRepository, never()).save(any(Diaries.class));
     }
 
@@ -233,7 +230,7 @@ class DiaryServiceTest {
 
         given(userRepository.findById(writerId))
                 .willReturn(Optional.of(mockUser));
-        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList()))
+        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt()))
                 .willReturn(s3Keys);
         given(diaryRepository.save(any(Diaries.class))).willAnswer(invocation -> {
             return invocation.getArgument(0); // 전달받은 Diaries 객체를 그대로 반환
@@ -458,7 +455,7 @@ class DiaryServiceTest {
         assertThat(result.getMood()).isEqualTo(Mood.HAPPY);
         assertThat(result.getWeather()).isEqualTo(Weather.SUNNY);
         assertThat(result.getTags()).isEqualTo(List.of("테스트", "일기"));
-        assertThat(result.getImagesJson()).isEqualTo(imageUrls);
+        assertThat(result.getImageUrls()).isEqualTo(imageUrls);
 
         verify(diaryRepository).findById(diaryId);
         verify(s3Service).createImageUrl(imageKeys);
@@ -628,5 +625,287 @@ class DiaryServiceTest {
         verify(diaryRepository).findAllByYearAndMonth(writerId, startMonth, endMonth);
         verify(s3Service).getThumbnailImageKey(writerId, year, month, mockDiaries);
         verify(s3Service, never()).createImageUrl(anyList());
+    }
+
+    @Test
+    @DisplayName("다이어리 수정 성공 테스트")
+    void updateDiary_Success() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        DiaryUpdateRequest request = DiaryUpdateRequest.builder()
+                .title("수정된 제목")
+                .content("수정된 내용")
+                .mood(Mood.SAD)
+                .tags(List.of("수정", "테스트"))
+                .build();
+
+        Diaries existingDiary = Diaries.builder()
+                .diaryId(diaryId)
+                .writerId(1L)
+                .writer("테스트유저")
+                .title("기존 제목")
+                .content("기존 내용")
+                .mood(Mood.HAPPY)
+                .weather(Weather.SUNNY)
+                .tagsJson(List.of("기존", "태그"))
+                .imageKeysJson(List.of("key1", "key2"))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(existingDiary));
+
+        // When
+        DiaryUpdateResponse result = diaryService.updateDiary(request, diaryId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getDiaryId()).isNotNull();
+        assertThat(result.getTitle()).isEqualTo("수정된 제목");
+        assertThat(result.getContent()).isEqualTo("수정된 내용");
+        assertThat(result.getImageCount()).isEqualTo(2);
+
+        verify(diaryRepository).findById(diaryId);
+    }
+
+    @Test
+    @DisplayName("다이어리 수정 시 일기를 찾을 수 없으면 DiaryException 발생")
+    void updateDiary_DiaryNotFound_ThrowsException() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        DiaryUpdateRequest request = DiaryUpdateRequest.builder()
+                .title("수정된 제목")
+                .content("수정된 내용")
+                .build();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> diaryService.updateDiary(request, diaryId))
+                .isInstanceOf(DiaryException.class)
+                .hasMessage(DiaryErrorStatus.NOT_FOUND.getErrorDescription());
+
+        verify(diaryRepository).findById(diaryId);
+    }
+
+    @Test
+    @DisplayName("이미지 업데이트 - 삭제만 수행")
+    void updateImages_DeleteOnly_Success() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        List<String> deleteImageKeys = List.of("key1", "key2");
+        List<MultipartFile> newImages = List.of();
+
+        Diaries existingDiary = Diaries.builder()
+                .diaryId(diaryId)
+                .writerId(1L)
+                .writer("테스트유저")
+                .title("테스트 제목")
+                .content("테스트 내용")
+                .imageKeysJson(List.of("key1", "key2", "key3"))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(existingDiary));
+
+        // When
+        diaryService.updateImages(diaryId, deleteImageKeys, newImages);
+
+        // Then
+        verify(diaryRepository).findById(diaryId);
+        verify(s3Service, times(2)).delete(anyString()); // key1, key2 삭제
+        verify(s3Service, never()).upload(anyLong(), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("이미지 업데이트 - 추가만 수행")
+    void updateImages_AddOnly_Success() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        List<String> deleteImageKeys = List.of();
+        List<MultipartFile> newImages = Arrays.asList(mockImage1, mockImage2);
+        List<String> newImageKeys = List.of("newKey1", "newKey2");
+
+        Diaries existingDiary = Diaries.builder()
+                .diaryId(diaryId)
+                .writerId(1L)
+                .writer("테스트유저")
+                .title("테스트 제목")
+                .content("테스트 내용")
+                .imageKeysJson(List.of("existingKey1", "existingKey2"))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(existingDiary));
+        given(s3Service.upload(eq(1L), eq(diaryId), eq(newImages), anyInt(), anyInt(), anyInt()))
+                .willReturn(newImageKeys);
+
+        // When
+        diaryService.updateImages(diaryId, deleteImageKeys, newImages);
+
+        // Then
+        verify(diaryRepository).findById(diaryId);
+        verify(s3Service, never()).delete(anyString());
+        verify(s3Service).upload(eq(1L), eq(diaryId), eq(newImages), anyInt(), anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("이미지 업데이트 - 삭제와 추가 동시 수행")
+    void updateImages_DeleteAndAdd_Success() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        List<String> deleteImageKeys = List.of("key1");
+        List<MultipartFile> newImages = Arrays.asList(mockImage1);
+        List<String> newImageKeys = List.of("newKey1");
+
+        Diaries existingDiary = Diaries.builder()
+                .diaryId(diaryId)
+                .writerId(1L)
+                .writer("테스트유저")
+                .title("테스트 제목")
+                .content("테스트 내용")
+                .imageKeysJson(List.of("key1", "key2", "key3"))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(existingDiary));
+        given(s3Service.upload(eq(1L), eq(diaryId), eq(newImages), anyInt(), anyInt(), anyInt()))
+                .willReturn(newImageKeys);
+
+        // When
+        diaryService.updateImages(diaryId, deleteImageKeys, newImages);
+
+        // Then
+        verify(diaryRepository).findById(diaryId);
+        verify(s3Service).delete("key1");
+        verify(s3Service).upload(eq(1L), eq(diaryId), eq(newImages), anyInt(), anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("이미지 업데이트 시 일기를 찾을 수 없으면 DiaryException 발생")
+    void updateImages_DiaryNotFound_ThrowsException() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        List<String> deleteImageKeys = List.of("key1");
+        List<MultipartFile> newImages = List.of();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> diaryService.updateImages(diaryId, deleteImageKeys, newImages))
+                .isInstanceOf(DiaryException.class)
+                .hasMessage(DiaryErrorStatus.NOT_FOUND.getErrorDescription());
+
+        verify(diaryRepository).findById(diaryId);
+        verify(s3Service, never()).delete(anyString());
+        verify(s3Service, never()).upload(anyLong(), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("이미지 업데이트 - 아무것도 변경하지 않은 경우")
+    void updateImages_NoChanges_Success() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        List<String> deleteImageKeys = List.of();
+        List<MultipartFile> newImages = List.of();
+
+        Diaries existingDiary = Diaries.builder()
+                .diaryId(diaryId)
+                .writerId(1L)
+                .writer("테스트유저")
+                .title("테스트 제목")
+                .content("테스트 내용")
+                .imageKeysJson(List.of("key1", "key2"))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(existingDiary));
+
+        // When
+        diaryService.updateImages(diaryId, deleteImageKeys, newImages);
+
+        // Then
+        verify(diaryRepository).findById(diaryId);
+        verify(s3Service, never()).delete(anyString());
+        verify(s3Service, never()).upload(anyLong(), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("이미지 업데이트 - S3 삭제 실패 시 예외 전파")
+    void updateImages_S3DeleteFailure_ThrowsException() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        List<String> deleteImageKeys = List.of("key1");
+        List<MultipartFile> newImages = List.of();
+
+        Diaries existingDiary = Diaries.builder()
+                .diaryId(diaryId)
+                .writerId(1L)
+                .writer("테스트유저")
+                .title("테스트 제목")
+                .content("테스트 내용")
+                .imageKeysJson(List.of("key1", "key2"))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(existingDiary));
+        doThrow(new RuntimeException("S3 삭제 실패"))
+                .when(s3Service).delete("key1");
+
+        // When & Then
+        assertThatThrownBy(() -> diaryService.updateImages(diaryId, deleteImageKeys, newImages))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("S3 삭제 실패");
+
+        verify(diaryRepository).findById(diaryId);
+        verify(s3Service).delete("key1");
+        verify(s3Service, never()).upload(anyLong(), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("이미지 업데이트 - S3 업로드 실패 시 예외 전파")
+    void updateImages_S3UploadFailure_ThrowsException() {
+        // Given
+        byte[] diaryId = UlidGenerator.generatorUlid();
+        List<String> deleteImageKeys = List.of();
+        List<MultipartFile> newImages = Arrays.asList(mockImage1);
+
+        Diaries existingDiary = Diaries.builder()
+                .diaryId(diaryId)
+                .writerId(1L)
+                .writer("테스트유저")
+                .title("테스트 제목")
+                .content("테스트 내용")
+                .imageKeysJson(List.of("key1", "key2"))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(existingDiary));
+        given(s3Service.upload(eq(1L), eq(diaryId), eq(newImages), anyInt(), anyInt(), anyInt()))
+                .willThrow(new RuntimeException("S3 업로드 실패"));
+
+        // When & Then
+        assertThatThrownBy(() -> diaryService.updateImages(diaryId, deleteImageKeys, newImages))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("S3 업로드 실패");
+
+        verify(diaryRepository).findById(diaryId);
+        verify(s3Service, never()).delete(anyString());
+        verify(s3Service).upload(eq(1L), eq(diaryId), eq(newImages), anyInt(), anyInt(), anyInt());
     }
 }
