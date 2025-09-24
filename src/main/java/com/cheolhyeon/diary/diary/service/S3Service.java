@@ -26,13 +26,13 @@ public class S3Service {
     @Value("${spring.cloud.aws.s3.bucket}")
     private String bucketName;
 
-    public List<String> upload(Long writerId, byte[] diaryId, List<MultipartFile> images) {
+    public List<String> upload(Long writerId, byte[] diaryId, List<MultipartFile> images, int year, int month, int day) {
         List<String> keys = new ArrayList<>();
         try {
             for (int i = 0; i < images.size(); i++) {
                 MultipartFile image = images.get(i);
 
-                String key = generateKey(writerId, image.getOriginalFilename(), diaryId, i + 1);
+                String key = generateKey(writerId, image.getOriginalFilename(), diaryId, i + 1, year, month, day);
                 keys.add(key);
                 s3Template.upload(bucketName, key, image.getInputStream());
             }
@@ -47,24 +47,36 @@ public class S3Service {
         return keys;
     }
 
-    private String generateKey(Long writerId, String originalName, byte[] diaryId, int order) {
+    private String generateKey(Long writerId, String originalName, byte[] diaryId, int order, int year, int month, int day) {
         final String s3ObjectName = "diary_service";
         String diaryIdAsString = UUID.nameUUIDFromBytes(diaryId).toString();
-        String date = LocalDate.now().toString().replace("-", "/");
-        String ext = Optional.ofNullable(originalName)
+        String dateString = LocalDate.of(year, month, day).toString().replace("-", "/");
+        String ext = extractFileType(originalName);
+        String key = UUID.randomUUID().toString().replaceAll("-", "");
+        String fileName = extractThumbnailPrefix(originalName, key);
+        return "%s/%d/%s/%s/%d/%s.%s".formatted(s3ObjectName, writerId, diaryIdAsString, dateString, order, fileName, ext);
+    }
+
+    private String extractThumbnailPrefix(String originalName, String key) {
+        return originalName != null && originalName.startsWith("thumbnail_")
+                ? "thumbnail_" + key
+                : key;
+    }
+
+    private String extractFileType(String originalName) {
+        return Optional.ofNullable(originalName)
                 .filter(it -> it.contains("."))
                 .map(it -> it.substring(it.lastIndexOf(".") + 1).toLowerCase())
                 .filter(s -> !s.isBlank())
                 .orElse("bin");
-        String key = UUID.randomUUID().toString().replaceAll("-", "");
-        String fileName = originalName != null && originalName.startsWith("thumbnail_")
-                ? "thumbnail_" + key
-                : key;
-        return "%s/%d/%s/%s/%d/%s.%s".formatted(s3ObjectName, writerId, diaryIdAsString, date, order, fileName, ext);
     }
 
     public void delete(String k) {
-        s3Template.deleteObject(bucketName, k);
+        try {
+            s3Template.deleteObject(bucketName, k);
+        } catch (Exception e) {
+            throw new S3Exception(S3ErrorStatus.FAILED_DELETE_IMAGE,List.of(k));
+        }
     }
 
     public List<String> getThumbnailImageKey(Long writerId, int year, int month, int day, List<Diaries> diariesByMonth) {
@@ -110,7 +122,7 @@ public class S3Service {
         List<String> imageUrl = new ArrayList<>();
         try {
             for (String imageJson : imageJsonArray) {
-                URL signedGetURL = s3Template.createSignedGetURL(bucketName, imageJson, Duration.ofMinutes(10L));
+                URL signedGetURL = s3Template.createSignedGetURL(bucketName, imageJson, Duration.ofMinutes(5));
                 String url = signedGetURL.toString();
                 imageUrl.add(url);
             }
