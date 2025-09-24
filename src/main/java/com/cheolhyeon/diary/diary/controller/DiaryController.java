@@ -78,4 +78,11 @@ public class DiaryController {
         diaryService.updateImages(diaryPk, deleteImageKeys, updateImages);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/api/diary/{diaryId}")
+    public ResponseEntity<Void> deleteDiary(@PathVariable String diaryId) {
+        byte[] diaryPk = Ulid.from(diaryId).toBytes();
+        diaryService.deleteDiary(diaryPk);
+        return ResponseEntity.noContent().build();
+    }
 }

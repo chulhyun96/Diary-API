@@ -56,19 +56,19 @@ public class DiaryService {
 
     @Transactional
     public DiaryUpdateResponse updateDiary(DiaryUpdateRequest request, byte[] diaryId) {
-        Diaries findDiary = diaryRepository.findById(diaryId)
+        Diaries targetEntity = diaryRepository.findById(diaryId)
                 .orElseThrow(() -> new DiaryException(DiaryErrorStatus.NOT_FOUND));
-        findDiary.update(request);
-        return DiaryUpdateResponse.toResponse(findDiary);
+        targetEntity.update(request);
+        return DiaryUpdateResponse.toResponse(targetEntity);
     }
 
     @Transactional
     public void updateImages(byte[] diaryId, List<String> deleteImageKeysJson, List<MultipartFile> newImages) {
-        Diaries diary = diaryRepository.findById(diaryId)
+        Diaries targetEntity = diaryRepository.findById(diaryId)
                 .orElseThrow(() -> new DiaryException(DiaryErrorStatus.NOT_FOUND));
         // 현재 이미지의 키값들을 끌고온다
         List<String> currentImageKeysJson =
-                Optional.ofNullable(diary.getImageKeysJson())
+                Optional.ofNullable(targetEntity.getImageKeysJson())
                         .orElseGet(List::of);
         // 삭제할 이미지들을 끌고온다
         Set<String> toDelete = new LinkedHashSet<>(Optional.ofNullable(deleteImageKeysJson).orElseGet(List::of));
@@ -86,9 +86,9 @@ public class DiaryService {
         // 5) 신규 업로드
         List<String> uploadedKeys = Collections.emptyList();
         if (newImages != null && !newImages.isEmpty()) {
-            LocalDateTime createdAt = diary.getCreatedAt();
+            LocalDateTime createdAt = targetEntity.getCreatedAt();
             uploadedKeys = s3Service.upload(
-                    diary.getWriterId(),
+                    targetEntity.getWriterId(),
                     diaryId,
                     newImages,
                     createdAt.getYear(),
@@ -100,7 +100,7 @@ public class DiaryService {
         List<String> finalKeys = new ArrayList<>(remaining);
         finalKeys.addAll(uploadedKeys);
 
-        diary.updateImageKeysJson(finalKeys);
+        targetEntity.updateImageKeysJson(finalKeys);
     }
 
     public List<DiaryResponseByYearAndMonth> readDiariesByYearAndMonth(int year, int month) {
@@ -108,11 +108,11 @@ public class DiaryService {
         LocalDateTime startMonth = searchDate.atStartOfDay();
         LocalDateTime endMonth = startMonth.plusMonths(1);
 
-        List<Diaries> allDiariesByYearAndMonth = diaryRepository.findAllByYearAndMonth(writerId, startMonth, endMonth);
+        List<Diaries> targetEntities = diaryRepository.findAllByYearAndMonth(writerId, startMonth, endMonth);
         List<String> thumbnailImageKeys =
-                s3Service.getThumbnailImageKey(writerId, year, month, allDiariesByYearAndMonth);
+                s3Service.getThumbnailImageKey(writerId, year, month, targetEntities);
         List<String> thumbnailImage = s3Service.createImageUrl(thumbnailImageKeys);
-        return DiaryResponseByYearAndMonth.toResponse(allDiariesByYearAndMonth, thumbnailImage);
+        return DiaryResponseByYearAndMonth.toResponse(targetEntities, thumbnailImage);
     }
 
     public List<DiaryResponseByMonthAndDay> readDiariesByMonthAndDay(int year, int month, int day) {
@@ -120,19 +120,31 @@ public class DiaryService {
         LocalDateTime startDay = currentDate.atStartOfDay();
         LocalDateTime endDay = startDay.plusDays(1);
 
-        List<Diaries> diariesByMonthAndDay = diaryRepository.findByMonthAndDay(
+        List<Diaries> targetEntities = diaryRepository.findByMonthAndDay(
                 writerId, startDay, endDay);
-        List<String> thumbnailImageKeys = s3Service.getThumbnailImageKey(writerId, year, month, day, diariesByMonthAndDay);
+        List<String> thumbnailImageKeys = s3Service.getThumbnailImageKey(writerId, year, month, day, targetEntities);
         List<String> thumbnailImage = s3Service.createImageUrl(thumbnailImageKeys);
-        return DiaryResponseByMonthAndDay.toResponse(diariesByMonthAndDay, thumbnailImage);
+        return DiaryResponseByMonthAndDay.toResponse(targetEntities, thumbnailImage);
     }
 
-    // 해당 부분 바뀌었으니깐 테스트 코드 재작성 및 html에서도 이부분 이미지 수정작업시 매핑할 수 있게
     public DiaryResponseById readDiaryById(byte[] diaryId) {
-        Diaries diary = diaryRepository.findById(diaryId)
+        Diaries targetEntity = diaryRepository.findById(diaryId)
                 .orElseThrow(() -> new DiaryException(DiaryErrorStatus.NOT_FOUND));
-        List<String> imageKeysJson = diary.getImageKeysJson();
+        if (targetEntity.getDeletedAt() != null) {
+            throw new DiaryException(DiaryErrorStatus.NOT_FOUND);
+        }
+        List<String> imageKeysJson = targetEntity.getImageKeysJson();
         List<String> imageUrls = s3Service.createImageUrl(imageKeysJson);
-        return DiaryResponseById.toResponse(diary, imageKeysJson, imageUrls);
+        return DiaryResponseById.toResponse(targetEntity, imageKeysJson, imageUrls);
+    }
+
+    @Transactional
+    public void deleteDiary(byte[] diaryPk) {
+        Diaries targetEntity = diaryRepository.findById(diaryPk)
+                .orElseThrow(() -> new DiaryException(DiaryErrorStatus.NOT_FOUND));
+        if (targetEntity.getDeletedAt() != null) {
+            throw new DiaryException(DiaryErrorStatus.ALREADY_DELETE);
+        }
+        targetEntity.updateDeleteAt();
     }
 }

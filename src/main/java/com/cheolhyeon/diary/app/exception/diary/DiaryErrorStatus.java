@@ -16,7 +16,10 @@ public enum DiaryErrorStatus implements ErrorStatus, Serializable {
             HttpStatus.NOT_FOUND.value(),
             HttpStatus.NOT_FOUND.getReasonPhrase(),
             "해당 일기를 찾을 수 없습니다."
-    );
+    ), ALREADY_DELETE(
+            HttpStatus.BAD_REQUEST.value(),
+            HttpStatus.BAD_REQUEST.getReasonPhrase(),
+            "잘못된 접근입니다.");
     private final int errorCode;
     private final String errorMessage;
     private final String errorDescription;
