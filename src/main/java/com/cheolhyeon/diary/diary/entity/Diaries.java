@@ -58,4 +58,8 @@ public class Diaries {
     public void updateImageKeysJson(List<String> leftImageKeysJson) {
         this.imageKeysJson = leftImageKeysJson;
     }
+
+    public void softDeletedAt() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }

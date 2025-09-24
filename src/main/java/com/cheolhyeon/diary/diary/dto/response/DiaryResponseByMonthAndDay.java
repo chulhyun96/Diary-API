@@ -34,6 +34,9 @@ public class DiaryResponseByMonthAndDay {
         List<DiaryResponseByMonthAndDay> diaryResponses = new ArrayList<>();
         for (int i = 0; i < diariesByMonthAndDay.size(); i++) {
             Diaries diaries = diariesByMonthAndDay.get(i);
+            if (diaries.getDeletedAt() != null) {
+                continue;
+            }
             String thumbnailUrl = i < thumbnailImage.size() ? thumbnailImage.get(i) : null;
             String diaryIdAsString = Ulid.from(diaries.getDiaryId()).toString();
             diaryResponses.add(new DiaryResponseByMonthAndDay(

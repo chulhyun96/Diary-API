@@ -145,6 +145,6 @@ public class DiaryService {
         if (targetEntity.getDeletedAt() != null) {
             throw new DiaryException(DiaryErrorStatus.ALREADY_DELETE);
         }
-        targetEntity.updateDeleteAt();
+        targetEntity.softDeletedAt();
     }
 }
