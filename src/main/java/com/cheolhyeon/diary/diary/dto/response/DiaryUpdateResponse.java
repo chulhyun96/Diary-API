@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 @Getter
 @Builder
@@ -26,7 +28,9 @@ public class DiaryUpdateResponse {
                 .diaryId(diaryId)
                 .title(savedEntity.getTitle())
                 .content(savedEntity.getContent())
-                .imageCount(savedEntity.getImageKeysJson().size())
+                .imageCount(Optional.ofNullable(savedEntity.getImageKeysJson())
+                        .orElseGet(List::of)
+                        .size())
                 .updatedAt(savedEntity.getUpdatedAt())
                 .build();
     }
