@@ -30,14 +30,17 @@ public class DiaryResponseByMonthAndDay {
     private LocalDateTime updatedAt;
 
     public static List<DiaryResponseByMonthAndDay> toResponse(List<Diaries> diariesByMonthAndDay, List<String> thumbnailImage) {
-        // 나중에 코드 리팩토링 해야할듯.
         List<DiaryResponseByMonthAndDay> diaryResponses = new ArrayList<>();
-        for (int i = 0; i < diariesByMonthAndDay.size(); i++) {
-            Diaries diaries = diariesByMonthAndDay.get(i);
+        int thumbnailIndex = 0;
+        
+        for (Diaries diaries : diariesByMonthAndDay) {
             if (diaries.getDeletedAt() != null) {
                 continue;
             }
-            String thumbnailUrl = i < thumbnailImage.size() ? thumbnailImage.get(i) : null;
+            String thumbnailUrl = null;
+            if (thumbnailIndex < thumbnailImage.size()) {
+                thumbnailUrl = thumbnailImage.get(thumbnailIndex);
+            }
             String diaryIdAsString = Ulid.from(diaries.getDiaryId()).toString();
             diaryResponses.add(new DiaryResponseByMonthAndDay(
                     diaryIdAsString,
@@ -50,6 +53,7 @@ public class DiaryResponseByMonthAndDay {
                     diaries.getCreatedAt(),
                     diaries.getUpdatedAt()
             ));
+            thumbnailIndex++;
         }
         return diaryResponses;
     }

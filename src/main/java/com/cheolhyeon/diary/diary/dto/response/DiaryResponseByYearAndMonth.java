@@ -29,14 +29,17 @@ public class DiaryResponseByYearAndMonth {
     private LocalDateTime updatedAt;
 
     public static List<DiaryResponseByYearAndMonth> toResponse(List<Diaries> allDiariesByYearAndMonth, List<String> thumbnailImage) {
-        // 나중에 코드 리팩토링 해야할듯.
         List<DiaryResponseByYearAndMonth> diaryResponses = new ArrayList<>();
-        for (int i = 0; i < allDiariesByYearAndMonth.size(); i++) {
-            Diaries diaries = allDiariesByYearAndMonth.get(i);
+        int thumbnailIndex = 0;
+        
+        for (Diaries diaries : allDiariesByYearAndMonth) {
             if (diaries.getDeletedAt() != null) {
                 continue;
             }
-            String thumbnailUrl = i < thumbnailImage.size() ? thumbnailImage.get(i) : null;
+            String thumbnailUrl = null;
+            if (thumbnailIndex < thumbnailImage.size()) {
+                thumbnailUrl = thumbnailImage.get(thumbnailIndex);
+            }
             String diaryIdAsString = Ulid.from(diaries.getDiaryId()).toString();
             diaryResponses.add(new DiaryResponseByYearAndMonth(
                     diaryIdAsString,
@@ -49,6 +52,7 @@ public class DiaryResponseByYearAndMonth {
                     diaries.getCreatedAt(),
                     diaries.getUpdatedAt()
             ));
+            thumbnailIndex++;
         }
         return diaryResponses;
     }

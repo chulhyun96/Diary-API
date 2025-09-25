@@ -195,16 +195,17 @@ class DiaryServiceTest {
                 .build();
 
         List<MultipartFile> images = Arrays.asList(mockImage1);
+        List<String> failedKeys = Arrays.asList("key1", "key2");
 
         given(userRepository.findById(writerId))
                 .willReturn(Optional.of(mockUser));
         given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt()))
-                .willThrow(new RuntimeException("S3 업로드 실패"));
+                .willThrow(new S3Exception(S3ErrorStatus.FAILED_UPLOAD_IMAGE, failedKeys));
 
         // When
         assertThatThrownBy(() -> diaryService.createDiary(request, images))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("S3 업로드 실패");
+                .isInstanceOf(S3Exception.class)
+                .hasMessage(S3ErrorStatus.FAILED_UPLOAD_IMAGE.getErrorDescription());
 
         // Then
         verify(userRepository).findById(writerId);
@@ -882,6 +883,7 @@ class DiaryServiceTest {
         byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> deleteImageKeys = List.of();
         List<MultipartFile> newImages = Arrays.asList(mockImage1);
+        List<String> failedKeys = Arrays.asList("key1", "key2");
 
         Diaries existingDiary = Diaries.builder()
                 .diaryId(diaryId)
@@ -897,12 +899,12 @@ class DiaryServiceTest {
         given(diaryRepository.findById(diaryId))
                 .willReturn(Optional.of(existingDiary));
         given(s3Service.upload(eq(1L), eq(diaryId), eq(newImages), anyInt(), anyInt(), anyInt()))
-                .willThrow(new RuntimeException("S3 업로드 실패"));
+                .willThrow(new S3Exception(S3ErrorStatus.FAILED_UPLOAD_IMAGE, failedKeys));
 
         // When & Then
         assertThatThrownBy(() -> diaryService.updateImages(diaryId, deleteImageKeys, newImages))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("S3 업로드 실패");
+                .isInstanceOf(S3Exception.class)
+                .hasMessage(S3ErrorStatus.FAILED_UPLOAD_IMAGE.getErrorDescription());
 
         verify(diaryRepository).findById(diaryId);
         verify(s3Service, never()).delete(anyString());

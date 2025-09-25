@@ -2,10 +2,12 @@ package com.cheolhyeon.diary.diary.service;
 
 import com.cheolhyeon.diary.app.exception.s3.S3ErrorStatus;
 import com.cheolhyeon.diary.app.exception.s3.S3Exception;
+import com.cheolhyeon.diary.app.util.UlidGenerator;
 import com.cheolhyeon.diary.diary.entity.Diaries;
 import io.awspring.cloud.s3.S3Resource;
 import io.awspring.cloud.s3.S3Template;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class S3Service {
@@ -37,19 +40,22 @@ public class S3Service {
                 s3Template.upload(bucketName, key, image.getInputStream());
             }
         } catch (Exception e) {
-            List<String> failedKeys = new ArrayList<>();
             for (String k : keys) {
-                failedKeys.add(k);
-                delete(k);
+                try {
+                    s3Template.deleteObject(bucketName, k);
+                } catch (Exception deleteException) {
+                    log.warn("Failed to delete S3 object during cleanup: {}, Error: {}", k, deleteException.getMessage());
+                }
             }
-            throw new S3Exception(S3ErrorStatus.FAILED_UPLOAD_IMAGE, failedKeys);
+            log.error("S3 upload failed, original cause: ", e);
+            throw new S3Exception(S3ErrorStatus.FAILED_UPLOAD_IMAGE, keys);
         }
         return keys;
     }
 
     private String generateKey(Long writerId, String originalName, byte[] diaryId, int order, int year, int month, int day) {
         final String s3ObjectName = "diary_service";
-        String diaryIdAsString = UUID.nameUUIDFromBytes(diaryId).toString();
+        String diaryIdAsString = UlidGenerator.ulidBytesToString(diaryId);
         String dateString = LocalDate.of(year, month, day).toString().replace("-", "/");
         String ext = extractFileType(originalName);
         String key = UUID.randomUUID().toString().replaceAll("-", "");
@@ -75,7 +81,7 @@ public class S3Service {
         try {
             s3Template.deleteObject(bucketName, k);
         } catch (Exception e) {
-            throw new S3Exception(S3ErrorStatus.FAILED_DELETE_IMAGE,List.of(k));
+            throw new S3Exception(S3ErrorStatus.FAILED_DELETE_IMAGE, List.of(k));
         }
     }
 
@@ -83,7 +89,7 @@ public class S3Service {
         List<String> thumbnailImage = new ArrayList<>();
 
         for (Diaries diaries : diariesByMonth) {
-            String diaryId = UUID.nameUUIDFromBytes(diaries.getDiaryId()).toString();
+            String diaryId = UlidGenerator.ulidBytesToString(diaries.getDiaryId());
             String prefix = String.format("diary_service/%d/%s/%d/%02d/%02d/", writerId, diaryId, year, month, day);
 
             List<S3Resource> s3Resources = s3Template.listObjects(bucketName, prefix);
@@ -102,7 +108,7 @@ public class S3Service {
         List<String> thumbnailImage = new ArrayList<>();
 
         for (Diaries diaries : diariesByMonth) {
-            String diaryId = UUID.nameUUIDFromBytes(diaries.getDiaryId()).toString();
+            String diaryId = UlidGenerator.ulidBytesToString(diaries.getDiaryId());
             // day 없이 월까지만 조회하는 prefix 생성
             String prefix = String.format("diary_service/%d/%s/%d/%02d/", writerId, diaryId, year, month);
 
