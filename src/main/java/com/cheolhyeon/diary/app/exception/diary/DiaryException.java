@@ -1,13 +1,13 @@
-package com.cheolhyeon.diary.app.exception.user;
+package com.cheolhyeon.diary.app.exception.diary;
 
 import com.cheolhyeon.diary.app.exception.ErrorStatus;
 import lombok.Getter;
 
 @Getter
-public class UserException extends RuntimeException {
+public class DiaryException extends RuntimeException {
     private final ErrorStatus errorStatus;
 
-    public UserException(ErrorStatus errorStatus) {
+    public DiaryException(ErrorStatus errorStatus) {
         super(errorStatus.getErrorDescription());
         this.errorStatus = errorStatus;
     }

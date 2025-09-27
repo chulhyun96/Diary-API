@@ -1,7 +1,10 @@
 package com.cheolhyeon.diary.app.exception;
 
-public interface ErrorStatus {
+import java.io.Serializable;
+
+public interface ErrorStatus extends Serializable {
     int getErrorCode();
+
 
     String getErrorMessage();
 

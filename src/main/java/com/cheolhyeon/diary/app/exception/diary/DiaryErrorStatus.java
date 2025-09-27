@@ -1,9 +1,8 @@
-package com.cheolhyeon.diary.app.exception.user;
+package com.cheolhyeon.diary.app.exception.diary;
 
 import com.cheolhyeon.diary.app.exception.ErrorStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 import org.springframework.http.HttpStatus;
 
@@ -12,12 +11,15 @@ import java.io.Serializable;
 @Getter
 @ToString
 @AllArgsConstructor
-public enum UserErrorStatus implements ErrorStatus, Serializable {
+public enum DiaryErrorStatus implements ErrorStatus, Serializable {
     NOT_FOUND(
             HttpStatus.NOT_FOUND.value(),
             HttpStatus.NOT_FOUND.getReasonPhrase(),
-            "해당 유저는 회원이 아닙니다."
-    );
+            "해당 일기를 찾을 수 없습니다."
+    ), ALREADY_DELETE(
+            HttpStatus.BAD_REQUEST.value(),
+            HttpStatus.BAD_REQUEST.getReasonPhrase(),
+            "잘못된 접근입니다.");
     private final int errorCode;
     private final String errorMessage;
     private final String errorDescription;

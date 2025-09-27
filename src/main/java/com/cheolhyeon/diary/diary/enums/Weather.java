@@ -1,4 +1,4 @@
-package com.cheolhyeon.diary.diaries.enums;
+package com.cheolhyeon.diary.diary.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
