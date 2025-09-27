@@ -53,6 +53,7 @@ public class Diaries {
         this.content = request.getContent();
         this.mood = request.getMood();
         this.tagsJson = request.getTags();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void updateImageKeysJson(List<String> leftImageKeysJson) {
