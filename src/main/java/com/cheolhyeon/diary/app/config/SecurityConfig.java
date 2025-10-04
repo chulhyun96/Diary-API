@@ -66,6 +66,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         // 허용할 Origin 설정 (같은 컴퓨터, 다른 포트)
         configuration.setAllowedOriginPatterns(List.of(
+                "localhost:3000"
         ));
         // 허용할 HTTP 메서드
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

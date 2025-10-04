@@ -56,6 +56,7 @@ class DiaryControllerTest {
                 .build();
 
         List<MultipartFile> images = Arrays.asList(mockImage1, mockImage2);
+        CustomUserPrincipal user = new CustomUserPrincipal(userId, "test-session-id");
         DiaryCreateResponse expectedResponse = DiaryCreateResponse.builder()
                 .diaryId("01K5GMK22MR1DZGJ0MD191NRJ6")
                 .year(2025)
@@ -67,7 +68,7 @@ class DiaryControllerTest {
                 .willReturn(expectedResponse);
 
         // When
-        ResponseEntity<DiaryCreateResponse> result = diaryController.createDiary(userId, request, images);
+        ResponseEntity<DiaryCreateResponse> result = diaryController.createDiary(user, request, images);
 
         // Then
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -113,8 +114,8 @@ class DiaryControllerTest {
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(result.getBody()).isNotNull();
         List<DiaryResponseByMonthAndDay> responseBody = result.getBody();
-        assertThat(responseBody).isNotNull();
-        assertThat(responseBody).hasSize(1);
+        assertThat(responseBody).isNotNull()
+                .hasSize(1);
         assertThat(responseBody.get(0).getTitle()).isEqualTo("테스트 제목");
 
         verify(diaryService).readDiariesByMonthAndDay(userId, year, month, day);
@@ -151,8 +152,8 @@ class DiaryControllerTest {
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(result.getBody()).isNotNull();
         List<DiaryResponseByYearAndMonth> responseBody = result.getBody();
-        assertThat(responseBody).isNotNull();
-        assertThat(responseBody).hasSize(1);
+        assertThat(responseBody).isNotNull()
+                .hasSize(1);
         assertThat(responseBody.get(0).getTitle()).isEqualTo("테스트 제목");
 
         verify(diaryService).readDiariesByYearAndMonth(userId, year, month);

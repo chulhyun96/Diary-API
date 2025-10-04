@@ -1,5 +1,6 @@
 package com.cheolhyeon.diary.auth.jwt;
 
+import com.cheolhyeon.diary.app.exception.session.SessionErrorStatus;
 import com.cheolhyeon.diary.auth.entity.AuthSession;
 import com.cheolhyeon.diary.auth.service.CustomUserPrincipal;
 import com.cheolhyeon.diary.auth.session.SessionRepository;
@@ -232,7 +233,7 @@ class JwtFilterTest {
 
         // Then
         verify(filterChain, never()).doFilter(request, response); // filterChain이 호출되지 않아야 함
-        verify(response).setStatus(-1); // ONLY_SINGLE_SESSION.getErrorCode() = -1
+        verify(response).setStatus(SessionErrorStatus.ONLY_SINGLE_SESSION.getErrorCode()); // -1
         verify(response).setContentType("application/json;charset=UTF-8");
         verify(response).setCharacterEncoding("UTF-8");
         verify(response.getWriter()).write(anyString());

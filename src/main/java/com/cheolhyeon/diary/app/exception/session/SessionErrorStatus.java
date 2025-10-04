@@ -13,11 +13,11 @@ import java.io.Serializable;
 public enum SessionErrorStatus implements ErrorStatus, Serializable {
 
     ONLY_SINGLE_SESSION(
-            -1,
+            420,
             "Invalid Session",
             "여러 기기에서 이용하실 수 없습니다."),
     SESSION_EXPIRED(
-            -2
+            421
             ,"Session Expired"
             ,"세션이 만료되었습니다. 다시 로그인해주세요."
     );

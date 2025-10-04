@@ -53,10 +53,10 @@ public class DiaryController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<DiaryCreateResponse> createDiary(
-            @CurrentUser Long userId,
+            @CurrentUser CustomUserPrincipal user,
             @RequestPart("diary") DiaryCreateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-        return ResponseEntity.ok(diaryService.createDiary(userId, request, images));
+        return ResponseEntity.ok(diaryService.createDiary(user.getUserId(), request, images));
     }
 
     @PatchMapping("/api/diary/{diaryId}")
