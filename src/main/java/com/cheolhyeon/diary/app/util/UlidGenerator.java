@@ -17,4 +17,8 @@ public abstract class UlidGenerator {
     public static String ulidBytesToString(byte[] ulidBytes) {
         return Ulid.from(ulidBytes).toString();
     }
+
+    public static String generatorUlidForSession() {
+        return UlidCreator.getUlid().toString();
+    }
 }

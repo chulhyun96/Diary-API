@@ -3,7 +3,7 @@ package com.cheolhyeon.diary.auth.controller;
 
 import com.cheolhyeon.diary.app.util.UlidGenerator;
 import com.cheolhyeon.diary.auth.service.AuthService;
-import com.cheolhyeon.diary.auth.token.SessionService;
+import com.cheolhyeon.diary.auth.session.SessionService;
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;

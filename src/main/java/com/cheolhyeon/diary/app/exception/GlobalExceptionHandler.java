@@ -3,7 +3,8 @@ package com.cheolhyeon.diary.app.exception;
 import com.cheolhyeon.diary.app.exception.diary.DiaryException;
 import com.cheolhyeon.diary.app.exception.dto.ErrorResponse;
 import com.cheolhyeon.diary.app.exception.s3.S3Exception;
-import com.cheolhyeon.diary.app.exception.user.UserException;
+import com.cheolhyeon.diary.app.exception.session.SessionException;
+import com.cheolhyeon.diary.app.exception.session.UserException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -41,6 +42,12 @@ public class GlobalExceptionHandler {
                 errorStatus.getErrorMessage(),
                 errorStatus.getErrorDescription()
         );
+        return ErrorResponse.of(errorStatus);
+    }
+    @ExceptionHandler(SessionException.class)
+    public ErrorResponse handleSessionExpiredException(SessionException e) {
+        ErrorStatus errorStatus = e.getErrorStatus();
+        log.info("SessionExpiredException: {} - 사용자에게 재로그인 요청", errorStatus.getErrorDescription());
         return ErrorResponse.of(errorStatus);
     }
 }

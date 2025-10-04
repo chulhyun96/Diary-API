@@ -4,12 +4,13 @@ import com.cheolhyeon.diary.app.exception.dto.ErrorResponse;
 import com.cheolhyeon.diary.app.exception.session.SessionErrorStatus;
 import com.cheolhyeon.diary.app.exception.session.SessionException;
 import com.cheolhyeon.diary.auth.service.CustomUserPrincipal;
-import com.cheolhyeon.diary.auth.token.SessionRepository;
+import com.cheolhyeon.diary.auth.session.SessionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,7 +28,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private final SessionRepository sessionRepository;
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    protected boolean shouldNotFilter(HttpServletRequest request)  {
         String requestURI = request.getRequestURI();
         return requestURI.equals("/") ||
                 requestURI.equals("/index.html") ||
@@ -46,7 +47,8 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
+
         // 더 앞선 필터에서 SecurityContextHolder에서 채울 수도 있음.
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
             filterChain.doFilter(request, response);
@@ -76,14 +78,14 @@ public class JwtFilter extends OncePerRequestFilter {
         } catch (SessionException e) {
             log.info("Single Session Policy: {} - USER ID: {}, SESSION ID: {}",
                     e.getMessage(), userId, sessionId);
-            
+
             response.setStatus(SessionErrorStatus.ONLY_SINGLE_SESSION.getErrorCode());
             response.setContentType("application/json;charset=UTF-8");
             response.setCharacterEncoding("UTF-8");
-            
+
             ErrorResponse errorResponse = ErrorResponse.of(e.getErrorStatus());
             String jsonResponse = new ObjectMapper().writeValueAsString(errorResponse);
-            
+
             log.debug("세션 정책 위반 응답 전송: {}", jsonResponse);
             response.getWriter().write(jsonResponse);
             response.getWriter().flush();
