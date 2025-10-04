@@ -2,6 +2,7 @@ package com.cheolhyeon.diary.diary.controller;
 
 import com.cheolhyeon.diary.app.exception.diary.DiaryErrorStatus;
 import com.cheolhyeon.diary.app.exception.diary.DiaryException;
+import com.cheolhyeon.diary.auth.service.CustomUserPrincipal;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryCreateRequest;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryUpdateRequest;
 import com.cheolhyeon.diary.diary.dto.response.*;
@@ -19,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +44,8 @@ class DiaryControllerTest {
     @InjectMocks
     DiaryController diaryController;
 
+    private final Long userId = 99999999L;
+
     @Test
     @DisplayName("다이어리 생성 API 테스트")
     void createDiary_Success() {
@@ -59,21 +63,22 @@ class DiaryControllerTest {
                 .day(23)
                 .build();
 
-        given(diaryService.createDiary(request, images))
+        given(diaryService.createDiary(userId, request, images))
                 .willReturn(expectedResponse);
 
         // When
-        ResponseEntity<DiaryCreateResponse> result = diaryController.createDiary(request, images);
+        ResponseEntity<DiaryCreateResponse> result = diaryController.createDiary(userId, request, images);
 
         // Then
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(result.getBody()).isNotNull();
-        assertThat(result.getBody().getDiaryId()).isEqualTo("01K5GMK22MR1DZGJ0MD191NRJ6");
-        assertThat(result.getBody().getYear()).isEqualTo(2025);
-        assertThat(result.getBody().getMonth()).isEqualTo(9);
-        assertThat(result.getBody().getDay()).isEqualTo(23);
-
-        verify(diaryService).createDiary(request, images);
+        DiaryCreateResponse responseBody = result.getBody();
+        assertThat(responseBody).isNotNull();
+        assertThat(responseBody.getDiaryId()).isEqualTo("01K5GMK22MR1DZGJ0MD191NRJ6");
+        assertThat(responseBody.getYear()).isEqualTo(2025);
+        assertThat(responseBody.getMonth()).isEqualTo(9);
+        assertThat(responseBody.getDay()).isEqualTo(23);
+        verify(diaryService).createDiary(userId, request, images);
     }
 
     @Test
@@ -83,6 +88,7 @@ class DiaryControllerTest {
         int year = 2025;
         int month = 9;
         int day = 23;
+        CustomUserPrincipal user = new CustomUserPrincipal(userId, "test-session-id");
 
         DiaryResponseByMonthAndDay mockDiary = DiaryResponseByMonthAndDay.builder()
                 .diaryIdString("01K5GMK22MR1DZGJ0MD191NRJ6")
@@ -94,22 +100,24 @@ class DiaryControllerTest {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        List<DiaryResponseByMonthAndDay> expectedResponse = Arrays.asList(mockDiary);
+        List<DiaryResponseByMonthAndDay> expectedResponse = Collections.singletonList(mockDiary);
 
-        given(diaryService.readDiariesByMonthAndDay(year, month, day))
+        given(diaryService.readDiariesByMonthAndDay(userId, year, month, day))
                 .willReturn(expectedResponse);
 
         // When
-        ResponseEntity<List<DiaryResponseByMonthAndDay>> result = 
-                diaryController.getDiariesByMonthAndDay(year, month, day);
+        ResponseEntity<List<DiaryResponseByMonthAndDay>> result =
+                diaryController.getDiariesByMonthAndDay(user, year, month, day);
 
         // Then
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(result.getBody()).isNotNull();
-        assertThat(result.getBody()).hasSize(1);
-        assertThat(result.getBody().get(0).getTitle()).isEqualTo("테스트 제목");
+        List<DiaryResponseByMonthAndDay> responseBody = result.getBody();
+        assertThat(responseBody).isNotNull();
+        assertThat(responseBody).hasSize(1);
+        assertThat(responseBody.get(0).getTitle()).isEqualTo("테스트 제목");
 
-        verify(diaryService).readDiariesByMonthAndDay(year, month, day);
+        verify(diaryService).readDiariesByMonthAndDay(userId, year, month, day);
     }
 
     @Test
@@ -118,6 +126,7 @@ class DiaryControllerTest {
         // Given
         int year = 2025;
         int month = 9;
+        CustomUserPrincipal user = new CustomUserPrincipal(userId, "test-session-id");
 
         DiaryResponseByYearAndMonth mockDiary = DiaryResponseByYearAndMonth.builder()
                 .diaryIdString("01K5GMK22MR1DZGJ0MD191NRJ6")
@@ -129,22 +138,24 @@ class DiaryControllerTest {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        List<DiaryResponseByYearAndMonth> expectedResponse = Arrays.asList(mockDiary);
+        List<DiaryResponseByYearAndMonth> expectedResponse = Collections.singletonList(mockDiary);
 
-        given(diaryService.readDiariesByYearAndMonth(year, month))
+        given(diaryService.readDiariesByYearAndMonth(userId, year, month))
                 .willReturn(expectedResponse);
 
         // When
-        ResponseEntity<List<DiaryResponseByYearAndMonth>> result = 
-                diaryController.getDiariesByYearAndMonth(year, month);
+        ResponseEntity<List<DiaryResponseByYearAndMonth>> result =
+                diaryController.getDiariesByYearAndMonth(user, year, month);
 
         // Then
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(result.getBody()).isNotNull();
-        assertThat(result.getBody()).hasSize(1);
-        assertThat(result.getBody().get(0).getTitle()).isEqualTo("테스트 제목");
+        List<DiaryResponseByYearAndMonth> responseBody = result.getBody();
+        assertThat(responseBody).isNotNull();
+        assertThat(responseBody).hasSize(1);
+        assertThat(responseBody.get(0).getTitle()).isEqualTo("테스트 제목");
 
-        verify(diaryService).readDiariesByYearAndMonth(year, month);
+        verify(diaryService).readDiariesByYearAndMonth(userId, year, month);
     }
 
     @Test
@@ -224,7 +235,7 @@ class DiaryControllerTest {
         String diaryId = "01K5GMK22MR1DZGJ0MD191NRJ6";
         byte[] diaryIdBytes = Ulid.from(diaryId).toBytes();
         List<String> deleteImageKeys = Arrays.asList("key1", "key2");
-        List<MultipartFile> updateImages = Arrays.asList();
+        List<MultipartFile> updateImages = List.of();
 
         // When
         ResponseEntity<Void> result = diaryController.updateImages(diaryId, updateImages, deleteImageKeys);
@@ -242,7 +253,7 @@ class DiaryControllerTest {
         // Given
         String diaryId = "01K5GMK22MR1DZGJ0MD191NRJ6";
         byte[] diaryIdBytes = Ulid.from(diaryId).toBytes();
-        List<String> deleteImageKeys = Arrays.asList();
+        List<String> deleteImageKeys = List.of();
         List<MultipartFile> updateImages = Arrays.asList(mockImage1, mockImage2);
 
         // When
@@ -261,8 +272,8 @@ class DiaryControllerTest {
         // Given
         String diaryId = "01K5GMK22MR1DZGJ0MD191NRJ6";
         byte[] diaryIdBytes = Ulid.from(diaryId).toBytes();
-        List<String> deleteImageKeys = Arrays.asList("key1");
-        List<MultipartFile> updateImages = Arrays.asList(mockImage1);
+        List<String> deleteImageKeys = List.of("key1");
+        List<MultipartFile> updateImages = Collections.singletonList(mockImage1);
 
         // When
         ResponseEntity<Void> result = diaryController.updateImages(diaryId, updateImages, deleteImageKeys);
@@ -280,8 +291,8 @@ class DiaryControllerTest {
         // Given
         String diaryId = "01K5GMK22MR1DZGJ0MD191NRJ6";
         byte[] diaryIdBytes = Ulid.from(diaryId).toBytes();
-        List<String> deleteImageKeys = Arrays.asList();
-        List<MultipartFile> updateImages = Arrays.asList();
+        List<String> deleteImageKeys = List.of();
+        List<MultipartFile> updateImages = List.of();
 
         // When
         ResponseEntity<Void> result = diaryController.updateImages(diaryId, updateImages, deleteImageKeys);
