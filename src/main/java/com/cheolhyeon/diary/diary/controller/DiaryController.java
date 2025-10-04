@@ -1,5 +1,7 @@
 package com.cheolhyeon.diary.diary.controller;
 
+import com.cheolhyeon.diary.app.annotation.CurrentUser;
+import com.cheolhyeon.diary.auth.service.CustomUserPrincipal;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryCreateRequest;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryUpdateRequest;
 import com.cheolhyeon.diary.diary.dto.response.*;
@@ -24,18 +26,18 @@ public class DiaryController {
 
     @GetMapping("/api/diary/{year}/{month}/{day}")
     public ResponseEntity<List<DiaryResponseByMonthAndDay>> getDiariesByMonthAndDay(
-            @PathVariable int year, @PathVariable int month, @PathVariable int day) {
-        List<DiaryResponseByMonthAndDay> diaryResponseByMonthAndDays = diaryService.readDiariesByMonthAndDay(year, month, day);
+            @CurrentUser CustomUserPrincipal user, @PathVariable int year, @PathVariable int month, @PathVariable int day) {
+        List<DiaryResponseByMonthAndDay> diaryResponseByMonthAndDays = diaryService.readDiariesByMonthAndDay(user.getUserId(), year, month, day);
         return ResponseEntity.status(HttpStatus.OK).body(diaryResponseByMonthAndDays);
     }
 
     @GetMapping("/api/diary/{year}/{month}")
     public ResponseEntity<List<DiaryResponseByYearAndMonth>> getDiariesByYearAndMonth(
+            @CurrentUser CustomUserPrincipal user,
             @PathVariable int year,
             @PathVariable int month
     ) {
-
-        return ResponseEntity.ok(diaryService.readDiariesByYearAndMonth(year, month));
+        return ResponseEntity.ok(diaryService.readDiariesByYearAndMonth(user.getUserId(), year, month));
     }
 
     @GetMapping("/api/diary/{diaryId}")
@@ -51,9 +53,10 @@ public class DiaryController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<DiaryCreateResponse> createDiary(
+            @CurrentUser Long userId,
             @RequestPart("diary") DiaryCreateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-        return ResponseEntity.ok(diaryService.createDiary(request, images));
+        return ResponseEntity.ok(diaryService.createDiary(userId, request, images));
     }
 
     @PatchMapping("/api/diary/{diaryId}")

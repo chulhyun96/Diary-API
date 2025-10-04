@@ -2,8 +2,8 @@ package com.cheolhyeon.diary.diary.service;
 
 import com.cheolhyeon.diary.app.exception.diary.DiaryErrorStatus;
 import com.cheolhyeon.diary.app.exception.diary.DiaryException;
-import com.cheolhyeon.diary.app.exception.user.UserErrorStatus;
-import com.cheolhyeon.diary.app.exception.user.UserException;
+import com.cheolhyeon.diary.app.exception.session.UserErrorStatus;
+import com.cheolhyeon.diary.app.exception.session.UserException;
 import com.cheolhyeon.diary.app.util.UlidGenerator;
 import com.cheolhyeon.diary.auth.entity.User;
 import com.cheolhyeon.diary.auth.repository.UserRepository;
@@ -31,13 +31,10 @@ public class DiaryService {
     private final DiaryRepository diaryRepository;
     private final UserRepository userRepository;
     private final S3Service s3Service;
-    private final Long writerId = 4384897461L;
 
     @Transactional
-    public DiaryCreateResponse createDiary(DiaryCreateRequest request, List<MultipartFile> images) {
-        // Authentication에서 kakaoId를 빼오는 방향으로 재설계 해야함.
-        // request에서 getWriterId 필드 제거 해야함.
-        User writer = userRepository.findById(writerId) // 얘도 아마 제거 될 것임
+    public DiaryCreateResponse createDiary(Long userId, DiaryCreateRequest request, List<MultipartFile> images) {
+        User writer = userRepository.findById(userId)
                 .orElseThrow(() -> new UserException(UserErrorStatus.NOT_FOUND));
 
         LocalDateTime currentDateTime = LocalDateTime.now();
@@ -49,7 +46,7 @@ public class DiaryService {
 
         eventPublisher.publishEvent(new S3RollbackCleanup(keys));
 
-        Diaries entity = DiaryCreateRequest.toEntity(diaryId, writerId, writer.getDisplayName(), keys, request);
+        Diaries entity = DiaryCreateRequest.toEntity(diaryId, userId, writer.getDisplayName(), keys, request);
         Diaries savedEntity = diaryRepository.save(entity);
         return DiaryCreateResponse.toResponse(savedEntity);
     }
@@ -103,26 +100,26 @@ public class DiaryService {
         targetEntity.updateImageKeysJson(finalKeys);
     }
 
-    public List<DiaryResponseByYearAndMonth> readDiariesByYearAndMonth(int year, int month) {
+    public List<DiaryResponseByYearAndMonth> readDiariesByYearAndMonth(Long userId, int year, int month) {
         LocalDate searchDate = LocalDate.of(year, month, 1);
         LocalDateTime startMonth = searchDate.atStartOfDay();
         LocalDateTime endMonth = startMonth.plusMonths(1);
 
-        List<Diaries> targetEntities = diaryRepository.findAllByYearAndMonth(writerId, startMonth, endMonth);
+        List<Diaries> targetEntities = diaryRepository.findAllByYearAndMonth(userId, startMonth, endMonth);
         List<String> thumbnailImageKeys =
-                s3Service.getThumbnailImageKey(writerId, year, month, targetEntities);
+                s3Service.getThumbnailImageKey(userId, year, month, targetEntities);
         List<String> thumbnailImage = s3Service.createImageUrl(thumbnailImageKeys);
         return DiaryResponseByYearAndMonth.toResponse(targetEntities, thumbnailImage);
     }
 
-    public List<DiaryResponseByMonthAndDay> readDiariesByMonthAndDay(int year, int month, int day) {
+    public List<DiaryResponseByMonthAndDay> readDiariesByMonthAndDay(Long userId, int year, int month, int day) {
         LocalDate currentDate = LocalDate.of(year, month, day);
         LocalDateTime startDay = currentDate.atStartOfDay();
         LocalDateTime endDay = startDay.plusDays(1);
 
         List<Diaries> targetEntities = diaryRepository.findByMonthAndDay(
-                writerId, startDay, endDay);
-        List<String> thumbnailImageKeys = s3Service.getThumbnailImageKey(writerId, year, month, day, targetEntities);
+                userId, startDay, endDay);
+        List<String> thumbnailImageKeys = s3Service.getThumbnailImageKey(userId, year, month, day, targetEntities);
         List<String> thumbnailImage = s3Service.createImageUrl(thumbnailImageKeys);
         return DiaryResponseByMonthAndDay.toResponse(targetEntities, thumbnailImage);
     }
