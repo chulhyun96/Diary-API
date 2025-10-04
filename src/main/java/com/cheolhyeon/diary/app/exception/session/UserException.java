@@ -1,4 +1,4 @@
-package com.cheolhyeon.diary.app.exception.user;
+package com.cheolhyeon.diary.app.exception.session;
 
 import com.cheolhyeon.diary.app.exception.ErrorStatus;
 import lombok.Getter;

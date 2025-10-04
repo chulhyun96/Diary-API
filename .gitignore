@@ -61,8 +61,6 @@ gradle.properties
 
 # 빌드 결과물 및 캐시
 bin/
-build/
-target/
 
 # 로그 파일
 *.log
@@ -70,3 +68,10 @@ target/
 # 임시 파일
 *.tmp
 *.temp
+
+# 프론트엔드 정적 파일들 (버전 관리 제외)
+src/main/resources/static/js/
+src/main/resources/static/*.html
+src/main/resources/static/*.ico
+src/main/resources/static/css/
+src/main/resources/static/assets/

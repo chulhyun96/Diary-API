@@ -1,8 +1,10 @@
 package com.cheolhyeon.diary.auth.dto.response;
 
-import com.cheolhyeon.diary.token.dto.response.JwtResponse;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
@@ -12,11 +14,6 @@ import lombok.*;
 public class KakaoUserInfoResponse {
     private Long id;
     private KakaoAccount kakao_account;
-    private JwtResponse jwtResponse;
-
-    public void addResponse(JwtResponse jwtResponse) {
-        this.jwtResponse = jwtResponse;
-    }
 
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)

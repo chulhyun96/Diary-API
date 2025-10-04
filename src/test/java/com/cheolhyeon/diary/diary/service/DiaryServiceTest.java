@@ -4,8 +4,8 @@ import com.cheolhyeon.diary.app.exception.diary.DiaryErrorStatus;
 import com.cheolhyeon.diary.app.exception.diary.DiaryException;
 import com.cheolhyeon.diary.app.exception.s3.S3ErrorStatus;
 import com.cheolhyeon.diary.app.exception.s3.S3Exception;
-import com.cheolhyeon.diary.app.exception.user.UserErrorStatus;
-import com.cheolhyeon.diary.app.exception.user.UserException;
+import com.cheolhyeon.diary.app.exception.session.UserErrorStatus;
+import com.cheolhyeon.diary.app.exception.session.UserException;
 import com.cheolhyeon.diary.app.util.UlidGenerator;
 import com.cheolhyeon.diary.auth.entity.User;
 import com.cheolhyeon.diary.auth.repository.UserRepository;
@@ -54,7 +54,7 @@ class DiaryServiceTest {
     MultipartFile mockImage1;
     @Mock
     MultipartFile mockImage2;
-    
+
     @InjectMocks
     DiaryService diaryService;
 
@@ -89,14 +89,14 @@ class DiaryServiceTest {
         given(userRepository.findById(writerId))
                 .willReturn(Optional.of(mockUser));
         given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt())).willReturn(s3Keys);
-        
+
         ArgumentCaptor<Diaries> diaryCaptor = ArgumentCaptor.forClass(Diaries.class);
         given(diaryRepository.save(diaryCaptor.capture())).willAnswer(invocation -> {
             return invocation.getArgument(0); // 전달받은 Diaries 객체를 그대로 반환
         });
 
         // When
-        DiaryCreateResponse result = diaryService.createDiary(request, images);
+        DiaryCreateResponse result = diaryService.createDiary(writerId, request, images);
 
         // Then
         assertThat(result).isNotNull();
@@ -127,7 +127,7 @@ class DiaryServiceTest {
         given(userRepository.findById(writerId)).willReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> diaryService.createDiary(request, images))
+        assertThatThrownBy(() -> diaryService.createDiary(writerId, request, images))
                 .isInstanceOf(UserException.class)
                 .hasMessage(UserErrorStatus.NOT_FOUND.getErrorDescription());
 
@@ -172,7 +172,7 @@ class DiaryServiceTest {
         given(diaryRepository.save(any(Diaries.class))).willReturn(savedDiary);
 
         // When
-        DiaryCreateResponse result = diaryService.createDiary(request, images);
+        DiaryCreateResponse result = diaryService.createDiary(writerId, request, images);
 
         // Then
         assertThat(result).isNotNull();
@@ -194,7 +194,7 @@ class DiaryServiceTest {
                 .content("테스트 내용")
                 .build();
 
-        List<MultipartFile> images = Arrays.asList(mockImage1);
+        List<MultipartFile> images = Collections.singletonList(mockImage1);
         List<String> failedKeys = Arrays.asList("key1", "key2");
 
         given(userRepository.findById(writerId))
@@ -203,7 +203,7 @@ class DiaryServiceTest {
                 .willThrow(new S3Exception(S3ErrorStatus.FAILED_UPLOAD_IMAGE, failedKeys));
 
         // When
-        assertThatThrownBy(() -> diaryService.createDiary(request, images))
+        assertThatThrownBy(() -> diaryService.createDiary(writerId, request, images))
                 .isInstanceOf(S3Exception.class)
                 .hasMessage(S3ErrorStatus.FAILED_UPLOAD_IMAGE.getErrorDescription());
 
@@ -238,13 +238,14 @@ class DiaryServiceTest {
         });
 
         // When
-        diaryService.createDiary(request, images);
+        diaryService.createDiary(writerId, request, images);
 
         // Then
         ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(S3RollbackCleanup.class);
         verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue()).isNotNull();
     }
+
     @Test
     @DisplayName("특정 날짜에 작성된 일기리스트 제공 ")
     void readDiaries_YearAndMonthAndDay() {
@@ -282,17 +283,16 @@ class DiaryServiceTest {
         given(s3Service.createImageUrl(thumbnailKeys))
                 .willReturn(thumbnailUrls);
         // When
-        List<DiaryResponseByMonthAndDay> result = diaryService.readDiariesByMonthAndDay(year, month, day);
+        List<DiaryResponseByMonthAndDay> result = diaryService.readDiariesByMonthAndDay(writerId, year, month, day);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
+        assertThat(result).isNotNull().hasSize(1);
         assertThat(result.get(0).getTitle()).isEqualTo("테스트 제목");
         assertThat(result.get(0).getThumbnailUrl()).isEqualTo("url1");
 
-        verify(diaryRepository,times(1)).findByMonthAndDay(writerId, startDay, endDay);
-        verify(s3Service,times(1)).getThumbnailImageKey(writerId, year, month, day, mockDiaries);
-        verify(s3Service,times(1)).createImageUrl(thumbnailKeys);
+        verify(diaryRepository, times(1)).findByMonthAndDay(writerId, startDay, endDay);
+        verify(s3Service, times(1)).getThumbnailImageKey(writerId, year, month, day, mockDiaries);
+        verify(s3Service, times(1)).createImageUrl(thumbnailKeys);
     }
 
     @Test
@@ -314,15 +314,16 @@ class DiaryServiceTest {
                 .willReturn(List.of());
 
         // When
-        List<DiaryResponseByMonthAndDay> result = diaryService.readDiariesByMonthAndDay(year, month, day);
+        List<DiaryResponseByMonthAndDay> result = diaryService.readDiariesByMonthAndDay(writerId, year, month, day);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result).isEmpty();
+        assertThat(result)
+                .isNotNull()
+                .isEmpty();
 
         verify(diaryRepository, times(1)).findByMonthAndDay(writerId, startDay, endDay);
-        verify(s3Service,times(1)).getThumbnailImageKey(writerId, year, month, day, List.of());
-        verify(s3Service,times(1)).createImageUrl(List.of());
+        verify(s3Service, times(1)).getThumbnailImageKey(writerId, year, month, day, List.of());
+        verify(s3Service, times(1)).createImageUrl(List.of());
     }
 
     @Test
@@ -354,7 +355,7 @@ class DiaryServiceTest {
                 .willThrow(new RuntimeException("S3 썸네일 키 조회 실패"));
 
         // When
-        assertThatThrownBy(() -> diaryService.readDiariesByMonthAndDay(year, month, day))
+        assertThatThrownBy(() -> diaryService.readDiariesByMonthAndDay(writerId, year, month, day))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("S3 썸네일 키 조회 실패");
         // Then
@@ -368,7 +369,7 @@ class DiaryServiceTest {
     void getDiaryById_DiaryNotFound_ThrowsException() {
         // Given
         byte[] diaryId = UlidGenerator.generatorUlid();
-        
+
         given(diaryRepository.findById(diaryId))
                 .willReturn(Optional.empty());
 
@@ -423,7 +424,7 @@ class DiaryServiceTest {
         byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> imageKeys = List.of("key1", "key2");
         List<String> imageUrls = List.of("url1", "url2");
-        
+
         Diaries mockDiary = Diaries.builder()
                 .diaryId(diaryId)
                 .writerId(1L)
@@ -515,11 +516,12 @@ class DiaryServiceTest {
                 .willReturn(thumbnailUrls);
 
         // When
-        List<DiaryResponseByYearAndMonth> result = diaryService.readDiariesByYearAndMonth(year, month);
+        List<DiaryResponseByYearAndMonth> result = diaryService.readDiariesByYearAndMonth(writerId, year, month);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result).hasSize(2);
+        assertThat(result)
+                .isNotNull()
+                .hasSize(2);
 
         // 첫 번째 일기 검증
         DiaryResponseByYearAndMonth firstDiary = result.get(0);
@@ -572,11 +574,12 @@ class DiaryServiceTest {
                 .willReturn(emptyThumbnailUrls);
 
         // When
-        List<DiaryResponseByYearAndMonth> result = diaryService.readDiariesByYearAndMonth(year, month);
+        List<DiaryResponseByYearAndMonth> result = diaryService.readDiariesByYearAndMonth(writerId, year, month);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result).isEmpty();
+        assertThat(result)
+                .isNotNull()
+                .isEmpty();
 
         // Mock 호출 검증
         verify(diaryRepository).findAllByYearAndMonth(writerId, startMonth, endMonth);
@@ -619,7 +622,7 @@ class DiaryServiceTest {
                 .willThrow(new S3Exception(S3ErrorStatus.FAILED_LOAD_IMAGE, List.of("S3 썸네일 키 조회 실패")));
 
         // When
-        assertThatThrownBy(() -> diaryService.readDiariesByYearAndMonth(year, month))
+        assertThatThrownBy(() -> diaryService.readDiariesByYearAndMonth(writerId, year, month))
                 .isInstanceOf(S3Exception.class)
                 .hasMessage(S3ErrorStatus.FAILED_LOAD_IMAGE.getErrorDescription());
         // Then
@@ -762,7 +765,7 @@ class DiaryServiceTest {
         // Given
         byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> deleteImageKeys = List.of("key1");
-        List<MultipartFile> newImages = Arrays.asList(mockImage1);
+        List<MultipartFile> newImages = Collections.singletonList(mockImage1);
         List<String> newImageKeys = List.of("newKey1");
 
         Diaries existingDiary = Diaries.builder()
@@ -882,7 +885,7 @@ class DiaryServiceTest {
         // Given
         byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> deleteImageKeys = List.of();
-        List<MultipartFile> newImages = Arrays.asList(mockImage1);
+        List<MultipartFile> newImages = Collections.singletonList(mockImage1);
         List<String> failedKeys = Arrays.asList("key1", "key2");
 
         Diaries existingDiary = Diaries.builder()
@@ -984,3 +987,4 @@ class DiaryServiceTest {
         verify(diaryRepository).findById(diaryId);
     }
 }
+

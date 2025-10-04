@@ -39,6 +39,7 @@ public class KakaoApiProperties {
                     "&redirect_uri=" + URLEncoder.encode(redirectUrl, StandardCharsets.UTF_8) +
                     "&response_type=" + responseType;
         } catch (Exception e) {
+            //TODO : 이 때는 에러를 던지기 전에 리트라이 로직이라던가, 로깅작업을 진행한 후에 에러를 던지고, 스택트레이스를 콘솔에 찍는걸로
             throw new RuntimeException("Failed to build login URL", e);
         }
     }
