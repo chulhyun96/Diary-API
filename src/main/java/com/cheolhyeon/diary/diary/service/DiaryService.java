@@ -42,7 +42,7 @@ public class DiaryService {
         int month = currentDateTime.getMonthValue();
         int day = currentDateTime.getDayOfMonth();
         byte[] diaryId = UlidGenerator.generatorUlid();
-        List<String> keys = s3Service.upload(writer.getKakaoId(), diaryId, images, year, month, day);
+        List<String> keys = s3Service.upload(writer.getUserId(), diaryId, images, year, month, day);
 
         eventPublisher.publishEvent(new S3RollbackCleanup(keys));
 

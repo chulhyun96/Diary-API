@@ -88,7 +88,7 @@ class DiaryServiceTest {
 
         given(userRepository.findById(writerId))
                 .willReturn(Optional.of(mockUser));
-        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt())).willReturn(s3Keys);
+        given(s3Service.upload(eq(mockUser.getUserId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt())).willReturn(s3Keys);
 
         ArgumentCaptor<Diaries> diaryCaptor = ArgumentCaptor.forClass(Diaries.class);
         given(diaryRepository.save(diaryCaptor.capture())).willAnswer(invocation -> {
@@ -103,7 +103,7 @@ class DiaryServiceTest {
         assertThat(result.getDiaryId()).isNotNull();
 
         verify(userRepository).findById(writerId);
-        verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), eq(images), anyInt(), anyInt(), anyInt());
+        verify(s3Service).upload(eq(mockUser.getUserId()), any(byte[].class), eq(images), anyInt(), anyInt(), anyInt());
         ArgumentCaptor<S3RollbackCleanup> eventCaptor = ArgumentCaptor.forClass(S3RollbackCleanup.class);
         verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().getImageKeys()).isEqualTo(s3Keys);
@@ -168,7 +168,7 @@ class DiaryServiceTest {
                 .build();
 
         given(userRepository.findById(writerId)).willReturn(Optional.of(mockUser));
-        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt())).willReturn(s3Keys);
+        given(s3Service.upload(eq(mockUser.getUserId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt())).willReturn(s3Keys);
         given(diaryRepository.save(any(Diaries.class))).willReturn(savedDiary);
 
         // When
@@ -178,7 +178,7 @@ class DiaryServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getDiaryId()).isNotNull();
 
-        verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), eq(images), anyInt(), anyInt(), anyInt());
+        verify(s3Service).upload(eq(mockUser.getUserId()), any(byte[].class), eq(images), anyInt(), anyInt(), anyInt());
     }
 
     @Test
@@ -199,7 +199,7 @@ class DiaryServiceTest {
 
         given(userRepository.findById(writerId))
                 .willReturn(Optional.of(mockUser));
-        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt()))
+        given(s3Service.upload(eq(mockUser.getUserId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt()))
                 .willThrow(new S3Exception(S3ErrorStatus.FAILED_UPLOAD_IMAGE, failedKeys));
 
         // When
@@ -209,7 +209,7 @@ class DiaryServiceTest {
 
         // Then
         verify(userRepository).findById(writerId);
-        verify(s3Service).upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt());
+        verify(s3Service).upload(eq(mockUser.getUserId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt());
         verify(diaryRepository, never()).save(any(Diaries.class));
     }
 
@@ -231,7 +231,7 @@ class DiaryServiceTest {
 
         given(userRepository.findById(writerId))
                 .willReturn(Optional.of(mockUser));
-        given(s3Service.upload(eq(mockUser.getKakaoId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt()))
+        given(s3Service.upload(eq(mockUser.getUserId()), any(byte[].class), anyList(), anyInt(), anyInt(), anyInt()))
                 .willReturn(s3Keys);
         given(diaryRepository.save(any(Diaries.class))).willAnswer(invocation -> {
             return invocation.getArgument(0); // 전달받은 Diaries 객체를 그대로 반환

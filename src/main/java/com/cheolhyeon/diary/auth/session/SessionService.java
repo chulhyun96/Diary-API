@@ -1,5 +1,7 @@
 package com.cheolhyeon.diary.auth.session;
 
+import com.cheolhyeon.diary.app.exception.hashcode.GenerationHashCodeErrorStatus;
+import com.cheolhyeon.diary.app.exception.hashcode.GenerationHashCodeException;
 import com.cheolhyeon.diary.app.exception.session.SessionErrorStatus;
 import com.cheolhyeon.diary.app.exception.session.SessionException;
 import com.cheolhyeon.diary.auth.entity.AuthSession;
@@ -56,10 +58,8 @@ public class SessionService {
                             expiresAt, ua, clientIp);
             sessionRepository.save(authSession);
             setCookie(response, refreshTokenPlain, sessionId);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("RT hash algorithm not supported", e);
-        } catch (InvalidKeyException e) {
-            throw new RuntimeException("RT hash invalid key", e);
+        }  catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new GenerationHashCodeException(GenerationHashCodeErrorStatus.GENERATE_FAILED_HASH_CODE);
         }
     }
     @Transactional
@@ -86,7 +86,7 @@ public class SessionService {
 
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             SecurityContextHolder.clearContext();
-            throw new RuntimeException(e);
+            throw new GenerationHashCodeException(GenerationHashCodeErrorStatus.GENERATE_FAILED_HASH_CODE);
         }
     }
 

@@ -43,6 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 requestURI.startsWith("/js/") ||
                 requestURI.startsWith("/css/") ||
                 requestURI.startsWith("/assets/") ||
+                requestURI.startsWith("/exception") ||
                 requestURI.startsWith("/favicon.ico");
     }
 
