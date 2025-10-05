@@ -56,15 +56,9 @@ class ShareCodeServiceTest {
     }
 
     private ShareCodeCreateRequest createShareCodeRequest(String code) {
-        ShareCodeCreateRequest request = new ShareCodeCreateRequest();
-        try {
-            java.lang.reflect.Field codeField = ShareCodeCreateRequest.class.getDeclaredField("code");
-            codeField.setAccessible(true);
-            codeField.set(request, code);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set code field", e);
-        }
-        return request;
+        return ShareCodeCreateRequest.builder()
+                .code(code)
+                .build();
     }
 
     @Test

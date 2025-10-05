@@ -4,13 +4,17 @@ import com.cheolhyeon.diary.sharecode.entity.ShareCode;
 import com.cheolhyeon.diary.sharecode.enums.ShareCodeStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Getter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class ShareCodeCreateRequest {
     @Size(min = 1, max = 30)
     @NotBlank(message = "코드는 필수입니다")

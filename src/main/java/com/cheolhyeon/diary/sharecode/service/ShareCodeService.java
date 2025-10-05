@@ -30,18 +30,18 @@ public class ShareCodeService {
     private final JwtProperties jwtProperties;
 
     @Transactional
-    public ShareCodeCreateResponse create(Long userId, ShareCodeCreateRequest reqeust) {
+    public ShareCodeCreateResponse create(Long userId, ShareCodeCreateRequest request) {
         shareCodeRepository.findShareCodeById(userId)
                 .ifPresent(shareCode -> {
                     throw new ShareCodeException(ShareCodeErrorStatus.ONLY_SINGLE_SHARE_CODE);
                 });
 
-        String codeHash = generateShareCode(reqeust.getCode());
-        ShareCode entity = reqeust.toEntity(userId, codeHash);
+        String codeHash = generateShareCode(request.getCode());
+        ShareCode entity = request.toEntity(userId, codeHash);
         shareCodeRepository.save(entity);
         return ShareCodeCreateResponse.builder()
                 .statusCode(HttpStatus.OK.value())
-                .codePlain(reqeust.getCode())
+                .codePlain(request.getCode())
                 .message("공유 코드가 성공적으로 생성되었습니다.")
                 .build();
     }
