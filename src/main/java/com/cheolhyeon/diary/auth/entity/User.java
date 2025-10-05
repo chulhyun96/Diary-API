@@ -3,7 +3,10 @@ package com.cheolhyeon.diary.auth.entity;
 import com.cheolhyeon.diary.auth.dto.response.KakaoUserInfoResponse;
 import com.cheolhyeon.diary.auth.enums.UserActiveStatus;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -14,8 +17,8 @@ import java.time.LocalDateTime;
 @Table(name = "users")
 public class User {
     @Id
-    @Column(name = "kakao_id")
-    private Long kakaoId;
+    @Column(name = "user_id")
+    private Long userId;
     
     @Column(name = "email")
     private String email;
@@ -39,7 +42,7 @@ public class User {
 
     public static User createUser(KakaoUserInfoResponse me) {
         User newUser = new User();
-        newUser.kakaoId = me.getId();
+        newUser.userId = me.getId();
         newUser.email = "";
         newUser.phone = "";
         newUser.displayName = me.getKakao_account().getProfile().getNickname();
