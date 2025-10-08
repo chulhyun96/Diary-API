@@ -1,4 +1,4 @@
-package com.cheolhyeon.diary.diary.dto;
+package com.cheolhyeon.diary.app.event.s3;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

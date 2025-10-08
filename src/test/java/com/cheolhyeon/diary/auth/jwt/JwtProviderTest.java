@@ -1,6 +1,7 @@
 package com.cheolhyeon.diary.auth.jwt;
 
 import com.cheolhyeon.diary.app.properties.JwtProperties;
+import com.cheolhyeon.diary.app.util.HashCodeGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -8,9 +9,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,12 +20,14 @@ class JwtProviderTest {
     @Mock
     JwtProperties jwtProperties;
 
+    @Mock
+    HashCodeGenerator hashCodeGenerator;
+
     @InjectMocks
     JwtProvider jwtProvider;
 
     private final String testSecret = "testSecretKeyForJwtTokenGenerationAndValidationTest";
     private final String testIssuer = "test-issuer";
-    private final String testRtHmacSecret = Base64.getEncoder().encodeToString("testRtHmacSecret".getBytes());
     private final int accessTokenExpiration = 3600000; // 1시간
     private final int rtLengthBytes = 32;
 
@@ -141,12 +141,12 @@ class JwtProviderTest {
 
     @Test
     @DisplayName("Refresh Token 해시 생성 성공 테스트")
-    void hashRT_Success() throws NoSuchAlgorithmException, InvalidKeyException {
+    void hashRT_Success() {
         // Given
-        given(jwtProperties.getRtHmacSecret()).willReturn(testRtHmacSecret);
         given(jwtProperties.getRtLengthBytes()).willReturn(rtLengthBytes);
-
         String refreshToken = jwtProvider.generateOpaqueRT();
+        String expectedHash = "mocked_hash_value_123";
+        given(hashCodeGenerator.generateShareCodeHash(refreshToken)).willReturn(expectedHash);
 
         // When
         String hashedToken = jwtProvider.hashRT(refreshToken);
@@ -154,7 +154,7 @@ class JwtProviderTest {
         // Then
         assertThat(hashedToken).isNotNull()
                 .isNotEmpty()
-                .isNotEqualTo(refreshToken)
+                .isEqualTo(expectedHash)
                 .matches("^[A-Za-z0-9_-]+$");
     }
 

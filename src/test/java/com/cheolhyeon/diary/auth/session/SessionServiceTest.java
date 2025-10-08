@@ -13,8 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -49,7 +47,7 @@ class SessionServiceTest {
 
     @Test
     @DisplayName("CASE2: hash(rtPlain) == session.currentHash - 성공적인 토큰 갱신")
-    void refreshSession_CurrentHashMatch_Success() throws NoSuchAlgorithmException, InvalidKeyException {
+    void refreshSession_CurrentHashMatch_Success() {
         // Given
         AuthSession mockSession = mock(AuthSession.class);
         given(mockSession.getRtHashCurrent()).willReturn(testCurrentHash);
@@ -76,7 +74,7 @@ class SessionServiceTest {
 
     @Test
     @DisplayName("CASE1: hash(rtPlain) != session.currentHash - 세션 삭제")
-    void refreshSession_CurrentHashMismatch_DeleteSession() throws NoSuchAlgorithmException, InvalidKeyException {
+    void refreshSession_CurrentHashMismatch_DeleteSession() {
         // Given
         AuthSession mockSession = mock(AuthSession.class);
         given(mockSession.getRtHashCurrent()).willReturn(testCurrentHash);
@@ -111,7 +109,7 @@ class SessionServiceTest {
 
     @Test
     @DisplayName("CASE4: hash(rtPlain)이 currentHash와 불일치 - 세션 삭제")
-    void refreshSession_HashMismatch_DeleteSession() throws NoSuchAlgorithmException, InvalidKeyException {
+    void refreshSession_HashMismatch_DeleteSession() {
         // Given
         AuthSession mockSession = mock(AuthSession.class);
         given(mockSession.getRtHashCurrent()).willReturn(testCurrentHash);

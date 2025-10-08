@@ -16,4 +16,14 @@ public interface ShareCodeRepository extends JpaRepository<ShareCode, Long> {
                     """, nativeQuery = true
     )
     Optional<ShareCode> findShareCodeById(@Param("userId")Long userId);
+
+
+    @Query(
+            value = """
+                    select * from share_code s
+                    where s.code_hash = :shareCode
+                    and s.status = 'ACTIVE'
+                    """, nativeQuery = true
+    )
+    Optional<ShareCode> findShareCodeByHashCode(@Param("shareCode") String shareCode);
 }
