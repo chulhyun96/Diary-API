@@ -37,7 +37,7 @@ public class AuthService {
                     User newUser = User.createUser(client);
                     return userRepository.save(newUser);
                 });
-        return user.getKakaoId();
+        return user.getUserId();
     }
 
     public String getLoginUrl() {

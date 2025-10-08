@@ -36,9 +36,9 @@ class DiaryRepositoryTest {
     @DisplayName("특정 Month, Day에 조회된 일기")
     void findByMonthAndDay() {
         //given
-        byte[] id1 = UlidGenerator.generatorUlid();
-        byte[] id2 = UlidGenerator.generatorUlid();
-        byte[] id3 = UlidGenerator.generatorUlid();
+        byte[] id1 = UlidGenerator.generatorUlidAsBytes();
+        byte[] id2 = UlidGenerator.generatorUlidAsBytes();
+        byte[] id3 = UlidGenerator.generatorUlidAsBytes();
         LocalDate currentDate = LocalDate.of(2024, 1, 1);
         LocalDateTime startDay = currentDate.atStartOfDay();
         LocalDateTime endDay = startDay.plusDays(1);
@@ -63,9 +63,9 @@ class DiaryRepositoryTest {
     @DisplayName("특정 Year, Month에 조회된 모든 일기")
     void findByYearAndMonth() {
         //given
-        byte[] id1 = UlidGenerator.generatorUlid();
-        byte[] id2 = UlidGenerator.generatorUlid();
-        byte[] id3 = UlidGenerator.generatorUlid();
+        byte[] id1 = UlidGenerator.generatorUlidAsBytes();
+        byte[] id2 = UlidGenerator.generatorUlidAsBytes();
+        byte[] id3 = UlidGenerator.generatorUlidAsBytes();
         LocalDate searchDate = LocalDate.of(2024, 1, 1);
         LocalDateTime startMonth = searchDate.atStartOfDay();
         LocalDateTime endMonth = startMonth.plusMonths(1);
