@@ -229,31 +229,44 @@ public class GlobalExceptionHandler {
         String errorLocation = extractErrorLocation(e.getStackTrace());
         // 1) 루트 메시지 확보 (SQLException 까지 파고들어도 OK)
         String errorMessage = (e.getMessage() != null) ? e.getMessage() : "";
-        if (!errorMessage.contains("Duplicate entry") || !errorMessage.contains("ux_friend_open_once")) {
-            return null; // 우리가 처리할 케이스 아님
-        }
-
+        
         // 2) 'Duplicate entry '...'' 캡처
         Matcher m = Pattern.compile("Duplicate entry '([^']+)'").matcher(errorMessage);
-        if (!m.find()) return null; // 패턴 불일치 시 다른 핸들러에 맡김
+        if (m.find() && errorMessage.contains("ux_friend_open_once")) {
+            String[] parts = m.group(1).split("-", 3);
+            if (parts.length >= 2) {
+                String ownerUserId = parts[0];
+                String requesterUserId = parts[1];
 
-        // 메시지 예: '4384897461-4384897461-1'
-        // 세 번째 토큰(= open_flag)은 버리고 2개만 쓰면 됨
-        String[] parts = m.group(1).split("-", 3);
-        if (parts.length < 2) return null;
+                if (ownerUserId.equals(requesterUserId)) {
+                    log.info("자기 자신에게 친구 요청 시도: ownerUserId={}, requesterUserId={}, errorLocation={}",
+                            ownerUserId, requesterUserId, errorLocation);
+                    return ErrorResponse.of(FriendRequestErrorStatus.CANNOT_REQUEST_TO_SELF);
+                }
 
-        String ownerUserId = parts[0];
-        String requesterUserId = parts[1];
-
-        if (ownerUserId.equals(requesterUserId)) {
-            log.info("자기 자신에게 친구 요청 시도: ownerUserId={}, requesterUserId={}, errorLocation={}",
-                    ownerUserId, requesterUserId, errorLocation);
-            return ErrorResponse.of(FriendRequestErrorStatus.CANNOT_REQUEST_TO_SELF);
+                log.info("중복 친구 요청 시도: ownerUserId={}, requesterUserId={}, errorLocation={}",
+                        ownerUserId, requesterUserId, errorLocation);
+                return ErrorResponse.of(FriendRequestErrorStatus.ALREADY_REQUESTED);
+            }
         }
 
-        log.info("중복 친구 요청 시도: ownerUserId={}, requesterUserId={}, errorLocation={}",
-                ownerUserId, requesterUserId, errorLocation);
-        return ErrorResponse.of(FriendRequestErrorStatus.ALREADY_REQUESTED);
+        // 처리할 수 없는 DataIntegrityViolationException의 경우 일반적인 데이터 무결성 오류로 처리
+        log.error("""
+                        ===== DataIntegrityViolationException 발생 =====
+                        ERROR MESSAGE: {}
+                        발생 위치: {}
+                        Exception Message: {}
+                        Stack Trace: {}
+                        =============================================
+                        """,
+                errorMessage,
+                errorLocation,
+                e.getMessage(),
+                e.getStackTrace()
+        );
+        
+        // 일반적인 데이터 무결성 오류 응답 반환
+        return ErrorResponse.of(CommonErrorStatus.DATA_INTEGRITY_VIOLATION);
     }
 
     private static String extractErrorLocation(StackTraceElement[] e) {

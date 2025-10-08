@@ -29,7 +29,6 @@ public class SseEmitterController {
         sseEmitterService.sendToSid(sessionId, "pending-count", pendingCount);
         int currentActiveConnectCount = sseEmitterService.getActiveConnectionCount();
         log.debug("current active connection count: {}", currentActiveConnectCount);
-        System.out.println("currentActiveConnectCount = " + currentActiveConnectCount);
         return subscribe;
     }
 }

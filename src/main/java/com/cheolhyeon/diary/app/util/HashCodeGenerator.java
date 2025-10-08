@@ -16,7 +16,7 @@ import java.util.Base64;
 public class HashCodeGenerator {
     private final String rtHmacSecret;
 
-    public HashCodeGenerator(@Value("${secret}") String rtHmacSecret) {
+    public HashCodeGenerator(@Value("${jwt.secret}") String rtHmacSecret) {
         this.rtHmacSecret = rtHmacSecret;
     }
 
