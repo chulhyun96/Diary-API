@@ -13,9 +13,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FriendRequest {
     @Id
-    private String requestId;
+    private String id;
     private Long ownerUserId;
     private Long requesterUserId;
+
     @Column(name = "code_id")
     private String hashShareCode;
 

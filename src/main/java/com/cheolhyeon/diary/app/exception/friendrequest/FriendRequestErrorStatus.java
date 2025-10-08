@@ -15,9 +15,14 @@ public enum FriendRequestErrorStatus implements ErrorStatus {
             HttpStatus.BAD_REQUEST.getReasonPhrase(),
             "자기 자신에게 친구요청을 보낼 수 없습니다."),
     ALREADY_REQUESTED(
-            HttpStatus.BAD_REQUEST.value(),
-            HttpStatus.BAD_REQUEST.getReasonPhrase(),
-            "이미 대상자에게 친구요청을 보냈습니다.");
+            HttpStatus.CONFLICT.value(),
+            HttpStatus.CONFLICT.getReasonPhrase(),
+            "이미 대상자에게 친구요청을 보냈습니다."),
+    ALREADY_DECIDED_REQUEST(
+            HttpStatus.CONFLICT.value(),
+            HttpStatus.CONFLICT.getReasonPhrase(),
+            "이미 처리된 항목입니다.")
+    ;
 
 
     private final int errorCode;

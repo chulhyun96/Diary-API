@@ -1,12 +1,15 @@
 package com.cheolhyeon.diary.friendrequest.service;
 
 import com.cheolhyeon.diary.app.event.friendrequest.FriendRequestNotification;
+import com.cheolhyeon.diary.app.exception.friendrequest.FriendRequestErrorStatus;
+import com.cheolhyeon.diary.app.exception.friendrequest.FriendRequestException;
 import com.cheolhyeon.diary.app.exception.session.UserException;
 import com.cheolhyeon.diary.app.exception.sharecode.ShareCodeException;
 import com.cheolhyeon.diary.auth.entity.AuthSession;
 import com.cheolhyeon.diary.auth.entity.User;
 import com.cheolhyeon.diary.auth.repository.UserRepository;
 import com.cheolhyeon.diary.auth.session.SessionRepository;
+import com.cheolhyeon.diary.friendrequest.dto.request.FriendRequestActionRequest;
 import com.cheolhyeon.diary.friendrequest.dto.response.SearchShareCodeOwnerResponse;
 import com.cheolhyeon.diary.friendrequest.entity.FriendRequest;
 import com.cheolhyeon.diary.friendrequest.enums.FriendRequestStatus;
@@ -29,8 +32,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -176,7 +178,7 @@ class FriendRequestServiceTest {
         verify(friendRequestRepository).save(friendRequestCaptor.capture());
 
         FriendRequest savedRequest = friendRequestCaptor.getValue();
-        assertThat(savedRequest.getRequestId()).isNotNull();
+        assertThat(savedRequest.getId()).isNotNull();
         assertThat(savedRequest.getOwnerUserId()).isEqualTo(ownerId);
         assertThat(savedRequest.getRequesterUserId()).isEqualTo(requesterId);
         assertThat(savedRequest.getHashShareCode()).isEqualTo(hashShareCode);
@@ -253,6 +255,130 @@ class FriendRequestServiceTest {
         verify(userRepository).findById(requesterId);
         verify(friendRequestRepository).save(any(FriendRequest.class));
         verify(eventPublisher).publishEvent(any(FriendRequestNotification.class));
+    }
+
+    @Test
+    @DisplayName("친구 요청 수락 성공")
+    void decide_Success_Accept() {
+        // Given
+        String requestId = "REQ_ACCEPT_123";
+        Long userId = 1L;
+        FriendRequestActionRequest actionRequest = FriendRequestActionRequest.builder()
+                .id(requestId)
+                .decide(FriendRequestStatus.ACCEPTED.name())
+                .build();
+
+        FriendRequest pendingRequest = FriendRequest.builder()
+                .id(requestId)
+                .ownerUserId(ownerId)
+                .requesterUserId(requesterId)
+                .hashShareCode(hashShareCode)
+                .status(FriendRequestStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .decidedAt(null)
+                .build();
+
+        given(friendRequestRepository.findPendingById(requestId, FriendRequestStatus.PENDING.name()))
+                .willReturn(Optional.of(pendingRequest));
+
+        // When
+        FriendRequestStatus result = friendRequestService.decide(userId, actionRequest);
+
+        // Then
+        assertThat(result).isEqualTo(FriendRequestStatus.ACCEPTED);
+        verify(friendRequestRepository).findPendingById(requestId, FriendRequestStatus.PENDING.name());
+        verify(friendRequestRepository).updateStatusByUserAction(
+                anyString(), anyLong(), anyString(), any(LocalDateTime.class));
+    }
+
+    @Test
+    @DisplayName("친구 요청 거절 성공")
+    void decide_Success_Decline() {
+        // Given
+        String requestId = "REQ_DECLINE_456";
+        Long userId = 1L;
+        FriendRequestActionRequest actionRequest = FriendRequestActionRequest.builder()
+                .id(requestId)
+                .decide(FriendRequestStatus.DECLINED.name())
+                .build();
+
+        FriendRequest pendingRequest = FriendRequest.builder()
+                .id(requestId)
+                .ownerUserId(ownerId)
+                .requesterUserId(requesterId)
+                .hashShareCode(hashShareCode)
+                .status(FriendRequestStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .decidedAt(null)
+                .build();
+
+        given(friendRequestRepository.findPendingById(requestId, FriendRequestStatus.PENDING.name()))
+                .willReturn(Optional.of(pendingRequest));
+
+        // When
+        FriendRequestStatus result = friendRequestService.decide(userId, actionRequest);
+
+        // Then
+        assertThat(result).isEqualTo(FriendRequestStatus.DECLINED);
+        verify(friendRequestRepository).findPendingById(requestId, FriendRequestStatus.PENDING.name());
+        verify(friendRequestRepository).updateStatusByUserAction(
+                anyString(), anyLong(), anyString(), any(LocalDateTime.class));
+    }
+
+    @Test
+    @DisplayName("친구 요청 처리 실패 - 이미 처리된 요청")
+    void decide_Fail_AlreadyDecided() {
+        // Given
+        String requestId = "REQ_ALREADY_DECIDED";
+        Long userId = 1L;
+        FriendRequestActionRequest actionRequest = FriendRequestActionRequest.builder()
+                .id(requestId)
+                .decide(FriendRequestStatus.ACCEPTED.name())
+                .build();
+
+        given(friendRequestRepository.findPendingById(requestId, FriendRequestStatus.PENDING.name()))
+                .willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> friendRequestService.decide(userId, actionRequest))
+                .isInstanceOf(FriendRequestException.class)
+                .hasFieldOrPropertyWithValue("errorStatus", FriendRequestErrorStatus.ALREADY_DECIDED_REQUEST);
+
+        verify(friendRequestRepository).findPendingById(requestId, FriendRequestStatus.PENDING.name());
+    }
+
+    @Test
+    @DisplayName("친구 요청 처리 - 다양한 사용자로 요청")
+    void decide_WithDifferentUsers() {
+        // Given
+        String requestId = "REQ_DIFF_USER";
+        Long differentUserId = 999L;
+        FriendRequestActionRequest actionRequest = FriendRequestActionRequest.builder()
+                .id(requestId)
+                .decide(FriendRequestStatus.ACCEPTED.name())
+                .build();
+
+        FriendRequest pendingRequest = FriendRequest.builder()
+                .id(requestId)
+                .ownerUserId(ownerId)
+                .requesterUserId(requesterId)
+                .hashShareCode(hashShareCode)
+                .status(FriendRequestStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .decidedAt(null)
+                .build();
+
+        given(friendRequestRepository.findPendingById(requestId, FriendRequestStatus.PENDING.name()))
+                .willReturn(Optional.of(pendingRequest));
+
+        // When
+        FriendRequestStatus result = friendRequestService.decide(differentUserId, actionRequest);
+
+        // Then
+        assertThat(result).isEqualTo(FriendRequestStatus.ACCEPTED);
+        verify(friendRequestRepository).findPendingById(requestId, FriendRequestStatus.PENDING.name());
+        verify(friendRequestRepository).updateStatusByUserAction(
+                anyString(), anyLong(), anyString(), any(LocalDateTime.class));
     }
 }
 

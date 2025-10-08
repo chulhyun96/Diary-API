@@ -3,6 +3,7 @@ package com.cheolhyeon.diary.app.exception;
 import com.cheolhyeon.diary.app.exception.diary.DiaryException;
 import com.cheolhyeon.diary.app.exception.dto.ErrorResponse;
 import com.cheolhyeon.diary.app.exception.friendrequest.FriendRequestErrorStatus;
+import com.cheolhyeon.diary.app.exception.friendrequest.FriendRequestException;
 import com.cheolhyeon.diary.app.exception.hashcode.GenerationHashCodeException;
 import com.cheolhyeon.diary.app.exception.s3.S3Exception;
 import com.cheolhyeon.diary.app.exception.session.SessionException;
@@ -29,7 +30,7 @@ public class GlobalExceptionHandler {
     public ErrorResponse handleUserException(UserException e) {
         ErrorStatus errorStatus = e.getErrorStatus();
         String errorLocation = extractErrorLocation(e.getStackTrace());
-        log.error("""
+        log.debug("""
                         ===== UserException 발생 =====
                         ERROR CODE: {}
                         ERROR MESSAGE: {}
@@ -54,7 +55,7 @@ public class GlobalExceptionHandler {
         ErrorStatus errorStatus = e.getErrorStatus();
 
         String errorLocation = extractErrorLocation(e.getStackTrace());
-        log.error("""
+        log.debug("""
                         ===== DiaryException 발생 =====
                         ERROR CODE: {}
                         ERROR MESSAGE: {}
@@ -133,7 +134,7 @@ public class GlobalExceptionHandler {
 
         String errorLocation = extractErrorLocation(e.getStackTrace());
 
-        log.error("""
+        log.debug("""
                         ===== MethodArgumentNotValidException 발생 =====
                         Validation Errors: {}
                         발생 위치: {}
@@ -180,8 +181,31 @@ public class GlobalExceptionHandler {
 
         String errorLocation = extractErrorLocation(e.getStackTrace());
 
-        log.info("""
+        log.debug("""
                         ===== ShareCodeException 발생 =====
+                        ERROR CODE: {}
+                        ERROR MESSAGE: {}
+                        ERROR DESCRIPTION: {}
+                        발생 위치: {}
+                        Exception Message: {}
+                        Stack Trace: {}
+                        ===================================
+                        """,
+                errorStatus.getErrorCode(),
+                errorStatus.getErrorMessage(),
+                errorStatus.getErrorDescription(),
+                errorLocation,
+                e.getMessage(),
+                e.getStackTrace()
+        );
+        return ErrorResponse.of(errorStatus);
+    }
+    @ExceptionHandler(FriendRequestException.class)
+    public ErrorResponse handleShareCodeException(FriendRequestException e) {
+        ErrorStatus errorStatus = e.getErrorStatus();
+        String errorLocation = extractErrorLocation(e.getStackTrace());
+        log.debug("""
+                        ===== FriendRequestException 발생 =====
                         ERROR CODE: {}
                         ERROR MESSAGE: {}
                         ERROR DESCRIPTION: {}
