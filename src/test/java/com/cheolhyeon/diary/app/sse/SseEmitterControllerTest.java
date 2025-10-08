@@ -9,12 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.util.Map;
-import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -49,12 +44,11 @@ class SseEmitterControllerTest {
                 .willReturn(0L);
 
         // When
-        ResponseEntity<?> result = sseEmitterController.subscribe(user);
+        SseEmitter result = sseEmitterController.subscribe(user);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(result.getBody()).isEqualTo(mockEmitter);
+        assertThat(result).isEqualTo(mockEmitter);
 
         verify(sseEmitterService).subscribe(sessionId, userId);
         verify(friendRequestRepository).countByRecipientId(userId, FriendRequestStatus.PENDING.name());
@@ -75,11 +69,11 @@ class SseEmitterControllerTest {
                 .willReturn(5L);
 
         // When
-        ResponseEntity<?> result = sseEmitterController.subscribe(user);
+        SseEmitter result = sseEmitterController.subscribe(user);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(result).isEqualTo(mockEmitter);
         verify(sseEmitterService).subscribe(sessionId, userId);
         verify(friendRequestRepository).countByRecipientId(userId, FriendRequestStatus.PENDING.name());
         verify(sseEmitterService).sendToSid(sessionId, "pending-count", 5L);
@@ -129,14 +123,12 @@ class SseEmitterControllerTest {
                 .willReturn(2L);
 
         // When
-        ResponseEntity<?> result1 = sseEmitterController.subscribe(user1);
-        ResponseEntity<?> result2 = sseEmitterController.subscribe(user2);
+        SseEmitter result1 = sseEmitterController.subscribe(user1);
+        SseEmitter result2 = sseEmitterController.subscribe(user2);
 
         // Then
-        assertThat(result1.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(result1.getBody()).isEqualTo(emitter1);
-        assertThat(result2.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(result2.getBody()).isEqualTo(emitter2);
+        assertThat(result1).isEqualTo(emitter1);
+        assertThat(result2).isEqualTo(emitter2);
 
         verify(sseEmitterService).subscribe(sessionId1, userId1);
         verify(sseEmitterService).subscribe(sessionId2, userId2);
@@ -144,52 +136,6 @@ class SseEmitterControllerTest {
         verify(sseEmitterService).sendToSid(sessionId2, "pending-count", 2L);
     }
 
-    @Test
-    @DisplayName("SSE 구독 실패 - 연결 수 제한 초과")
-    void subscribe_Failed_ConnectionLimitExceeded() {
-        // Given
-        Long userId = 1L;
-        String sessionId = "test-session-id";
-        CustomUserPrincipal user = new CustomUserPrincipal(userId, sessionId);
-
-        given(sseEmitterService.subscribe(sessionId, userId))
-                .willThrow(new IllegalStateException("최대 2개의 연결만 허용됩니다."));
-        given(sseEmitterService.getUserConnectionCount(userId)).willReturn(2);
-
-        // When
-        ResponseEntity<?> result = sseEmitterController.subscribe(user);
-
-        // Then
-        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
-        assertThat(result.getBody()).isInstanceOf(java.util.Map.class);
-
-        Map<String, Object> body = (Map<String, Object>) result.getBody();
-        assertThat(Objects.requireNonNull(body).get("error")).isEqualTo("CONNECTION_LIMIT_EXCEEDED");
-        assertThat(body.get("currentConnections")).isEqualTo(2);
-        assertThat(body.get("maxConnections")).isEqualTo(2);
-    }
-
-    @Test
-    @DisplayName("SSE 구독 실패 - 서버 연결 한도 도달")
-    void subscribe_Failed_ServerConnectionLimitReached() {
-        // Given
-        Long userId = 1L;
-        String sessionId = "test-session-id";
-        CustomUserPrincipal user = new CustomUserPrincipal(userId, sessionId);
-
-        given(sseEmitterService.subscribe(sessionId, userId))
-                .willThrow(new IllegalStateException("서버 연결 한도에 도달했습니다. 잠시 후 다시 시도해주세요."));
-
-        // When
-        ResponseEntity<?> result = sseEmitterController.subscribe(user);
-
-        // Then
-        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
-        assertThat(result.getBody()).isInstanceOf(java.util.Map.class);
-        
-        Map<String, Object> body = (Map<String, Object>) result.getBody();
-        assertThat(body.get("error")).isEqualTo("SERVICE_UNAVAILABLE");
-    }
 }
 
 

@@ -77,7 +77,7 @@ public class SseEmitterService {
         updateLastSendTime(sessionId);
         
         log.info("SSE connected: session={}, user={}, total={}, userConnections={}", 
-                sessionId, userId, emitterManage.size(), currentUserConnections + 1);
+                sessionId, userId, emitterManage.size(), currentUserConnections);
         
         return emitter;
     }
