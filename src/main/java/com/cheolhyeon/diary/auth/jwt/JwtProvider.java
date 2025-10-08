@@ -21,6 +21,7 @@ import java.util.Objects;
 public class JwtProvider {
 
     private final JwtProperties jwtProperties;
+    private final HashCodeGenerator hashCodeGenerator;
     private static final SecureRandom RNG = new SecureRandom();
     private static final Base64.Encoder BASE64_ENCODER = Base64.getUrlEncoder().withoutPadding();
 
@@ -50,7 +51,7 @@ public class JwtProvider {
     }
 
     public String hashRT(String rtPlain) {
-        return HashCodeGenerator.generateShareCodeHash(rtPlain);
+        return hashCodeGenerator.generateShareCodeHash(rtPlain);
     }
 
     public long getExpirationDate(Date now, String tokenType) {

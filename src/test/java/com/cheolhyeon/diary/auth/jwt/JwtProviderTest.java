@@ -1,6 +1,7 @@
 package com.cheolhyeon.diary.auth.jwt;
 
 import com.cheolhyeon.diary.app.properties.JwtProperties;
+import com.cheolhyeon.diary.app.util.HashCodeGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +19,9 @@ class JwtProviderTest {
 
     @Mock
     JwtProperties jwtProperties;
+
+    @Mock
+    HashCodeGenerator hashCodeGenerator;
 
     @InjectMocks
     JwtProvider jwtProvider;
@@ -140,8 +144,9 @@ class JwtProviderTest {
     void hashRT_Success() {
         // Given
         given(jwtProperties.getRtLengthBytes()).willReturn(rtLengthBytes);
-
         String refreshToken = jwtProvider.generateOpaqueRT();
+        String expectedHash = "mocked_hash_value_123";
+        given(hashCodeGenerator.generateShareCodeHash(refreshToken)).willReturn(expectedHash);
 
         // When
         String hashedToken = jwtProvider.hashRT(refreshToken);
@@ -149,7 +154,7 @@ class JwtProviderTest {
         // Then
         assertThat(hashedToken).isNotNull()
                 .isNotEmpty()
-                .isNotEqualTo(refreshToken)
+                .isEqualTo(expectedHash)
                 .matches("^[A-Za-z0-9_-]+$");
     }
 

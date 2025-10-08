@@ -2,6 +2,8 @@ package com.cheolhyeon.diary.app.util;
 
 import com.cheolhyeon.diary.app.exception.hashcode.GenerationHashCodeErrorStatus;
 import com.cheolhyeon.diary.app.exception.hashcode.GenerationHashCodeException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -10,14 +12,15 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-public abstract class HashCodeGenerator {
+@Component
+public class HashCodeGenerator {
+    private final String rtHmacSecret;
 
-    private HashCodeGenerator() {
-        throw new AssertionError("No " + HashCodeGenerator.class.getSimpleName() + " instances");
+    public HashCodeGenerator(@Value("${secret}") String rtHmacSecret) {
+        this.rtHmacSecret = rtHmacSecret;
     }
 
-    public static String generateShareCodeHash(String code) {
-        final String rtHmacSecret = "Rm3RDpZJc3lyOFe5DeUWPXyMPAbsEgYWVY5Qtucxpcg=";
+    public String generateShareCodeHash(String code) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             byte[] secretKey = Base64.getDecoder().decode(rtHmacSecret);

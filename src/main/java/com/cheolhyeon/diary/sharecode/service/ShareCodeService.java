@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ShareCodeService {
     private final ShareCodeRepository shareCodeRepository;
+    private final HashCodeGenerator hashCodeGenerator;
 
 
     @Transactional
@@ -60,6 +61,6 @@ public class ShareCodeService {
     }
 
     private String generateShareCodeHash(String code) {
-        return HashCodeGenerator.generateShareCodeHash(code);
+        return hashCodeGenerator.generateShareCodeHash(code);
     }
 }

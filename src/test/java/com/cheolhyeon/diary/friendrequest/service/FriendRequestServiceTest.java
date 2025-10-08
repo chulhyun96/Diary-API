@@ -55,6 +55,9 @@ class FriendRequestServiceTest {
     @Mock
     private SessionRepository sessionRepository;
 
+    @Mock
+    private com.cheolhyeon.diary.app.util.HashCodeGenerator hashCodeGenerator;
+
     @InjectMocks
     private FriendRequestService friendRequestService;
 
@@ -118,7 +121,8 @@ class FriendRequestServiceTest {
     @DisplayName("ShareCode로 소유자 검색 성공")
     void searchOwnerByShareCode_Success() {
         // Given
-        given(shareCodeRepository.findShareCodeByHashCode(anyString())).willReturn(Optional.of(testShareCode));
+        given(hashCodeGenerator.generateShareCodeHash(plainShareCode)).willReturn(hashShareCode);
+        given(shareCodeRepository.findShareCodeByHashCode(hashShareCode)).willReturn(Optional.of(testShareCode));
         given(userRepository.findById(ownerId)).willReturn(Optional.of(shareCodeOwner));
 
         // When
@@ -129,7 +133,8 @@ class FriendRequestServiceTest {
         assertThat(response.getOwnerDisplayName()).isEqualTo("공유코드소유자");
         assertThat(response.getShareCodeHash()).isNotNull();
 
-        verify(shareCodeRepository).findShareCodeByHashCode(anyString());
+        verify(hashCodeGenerator).generateShareCodeHash(plainShareCode);
+        verify(shareCodeRepository).findShareCodeByHashCode(hashShareCode);
         verify(userRepository).findById(ownerId);
     }
 
@@ -137,27 +142,31 @@ class FriendRequestServiceTest {
     @DisplayName("ShareCode로 소유자 검색 실패 - ShareCode가 존재하지 않음")
     void searchOwnerByShareCode_Fail_ShareCodeNotFound() {
         // Given
-        given(shareCodeRepository.findShareCodeByHashCode(anyString())).willReturn(Optional.empty());
+        given(hashCodeGenerator.generateShareCodeHash(plainShareCode)).willReturn(hashShareCode);
+        given(shareCodeRepository.findShareCodeByHashCode(hashShareCode)).willReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> friendRequestService.searchOwnerByShareCode(plainShareCode))
                 .isInstanceOf(ShareCodeException.class);
 
-        verify(shareCodeRepository).findShareCodeByHashCode(anyString());
+        verify(hashCodeGenerator).generateShareCodeHash(plainShareCode);
+        verify(shareCodeRepository).findShareCodeByHashCode(hashShareCode);
     }
 
     @Test
     @DisplayName("ShareCode로 소유자 검색 실패 - 사용자가 존재하지 않음")
     void searchOwnerByShareCode_Fail_UserNotFound() {
         // Given
-        given(shareCodeRepository.findShareCodeByHashCode(anyString())).willReturn(Optional.of(testShareCode));
+        given(hashCodeGenerator.generateShareCodeHash(plainShareCode)).willReturn(hashShareCode);
+        given(shareCodeRepository.findShareCodeByHashCode(hashShareCode)).willReturn(Optional.of(testShareCode));
         given(userRepository.findById(ownerId)).willReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> friendRequestService.searchOwnerByShareCode(plainShareCode))
                 .isInstanceOf(UserException.class);
 
-        verify(shareCodeRepository).findShareCodeByHashCode(anyString());
+        verify(hashCodeGenerator).generateShareCodeHash(plainShareCode);
+        verify(shareCodeRepository).findShareCodeByHashCode(hashShareCode);
         verify(userRepository).findById(ownerId);
     }
 

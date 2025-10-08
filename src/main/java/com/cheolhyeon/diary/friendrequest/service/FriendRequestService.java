@@ -38,9 +38,10 @@ public class FriendRequestService {
     private final ShareCodeRepository shareCodeRepository;
     private final UserRepository userRepository;
     private final SessionRepository sessionRepository;
+    private final HashCodeGenerator hashCodeGenerator;
 
     public SearchShareCodeOwnerResponse searchOwnerByShareCode(String plainShareCode) {
-        String hashShareCode = HashCodeGenerator.generateShareCodeHash(plainShareCode);
+        String hashShareCode = hashCodeGenerator.generateShareCodeHash(plainShareCode);
         ShareCode shareCode = shareCodeRepository.findShareCodeByHashCode(hashShareCode)
                 .orElseThrow(() -> new ShareCodeException(ShareCodeErrorStatus.NOT_FOUND));
         User shareCodeOwner = userRepository.findById(shareCode.getUserId())
@@ -94,7 +95,8 @@ public class FriendRequestService {
         friendRequestRepository.updateStatusByUserAction(
                 decideRequest.getId(),
                 userId,
-                FriendRequestStatus.DECLINED.name(), LocalDateTime.now());
+                FriendRequestStatus.DECLINED.name(),
+                LocalDateTime.now());
         return FriendRequestStatus.DECLINED;
     }
 }

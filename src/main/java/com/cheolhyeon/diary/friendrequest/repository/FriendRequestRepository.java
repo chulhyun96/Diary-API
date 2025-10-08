@@ -35,7 +35,8 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, St
     @Query(
             value = """
                                         update friend_request f
-                                        set f.status = :status and f.decided_at = :now
+                                        set f.status = :status,
+                                            f.decided_at = :now
                                         where f.id = :id
                                         and f.owner_user_id = :userId
                     """, nativeQuery = true
