@@ -5,6 +5,7 @@ import com.cheolhyeon.diary.auth.service.CustomUserPrincipal;
 import com.cheolhyeon.diary.friendrequest.enums.FriendRequestStatus;
 import com.cheolhyeon.diary.friendrequest.repository.FriendRequestRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -15,7 +16,7 @@ public class SseEmitterController {
     private final SseEmitterService sseEmitterService;
     private final FriendRequestRepository friendRequestRepository;
 
-    @GetMapping(value = "/subscribe/notification", produces = "text/event-stream")
+    @GetMapping(value = "/subscribe/notification", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(@CurrentUser CustomUserPrincipal user) {
         String sessionId = user.getSessionId();
         Long userId = user.getUserId();
