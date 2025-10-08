@@ -1,6 +1,7 @@
 package com.cheolhyeon.diary.sharecode.service;
 
 import com.cheolhyeon.diary.app.exception.sharecode.ShareCodeException;
+import com.cheolhyeon.diary.app.util.HashCodeGenerator;
 import com.cheolhyeon.diary.sharecode.dto.ShareCodeCreateResponse;
 import com.cheolhyeon.diary.sharecode.dto.request.ShareCodeCreateRequest;
 import com.cheolhyeon.diary.sharecode.entity.ShareCode;
@@ -29,7 +30,7 @@ class ShareCodeServiceTest {
     private ShareCodeRepository shareCodeRepository;
 
     @Mock
-    private com.cheolhyeon.diary.app.util.HashCodeGenerator hashCodeGenerator;
+    private HashCodeGenerator hashCodeGenerator;
 
     @InjectMocks
     private ShareCodeService shareCodeService;
