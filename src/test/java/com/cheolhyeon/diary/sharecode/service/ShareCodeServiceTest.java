@@ -1,7 +1,6 @@
 package com.cheolhyeon.diary.sharecode.service;
 
 import com.cheolhyeon.diary.app.exception.sharecode.ShareCodeException;
-import com.cheolhyeon.diary.app.properties.JwtProperties;
 import com.cheolhyeon.diary.sharecode.dto.ShareCodeCreateResponse;
 import com.cheolhyeon.diary.sharecode.dto.request.ShareCodeCreateRequest;
 import com.cheolhyeon.diary.sharecode.entity.ShareCode;
@@ -29,9 +28,6 @@ class ShareCodeServiceTest {
     @Mock
     private ShareCodeRepository shareCodeRepository;
 
-    @Mock
-    private JwtProperties jwtProperties;
-
     @InjectMocks
     private ShareCodeService shareCodeService;
 
@@ -50,9 +46,6 @@ class ShareCodeServiceTest {
                 .codeHash("EXISTING_HASH")
                 .status(ShareCodeStatus.ACTIVE)
                 .build();
-
-        // JwtProperties 모킹 - lenient로 설정하여 불필요한 stubbing 경고 방지
-        lenient().when(jwtProperties.getRtHmacSecret()).thenReturn("dGVzdF9zZWNyZXRfa2V5X2Zvcl9obWFjX3Rlc3Q=");
     }
 
     private ShareCodeCreateRequest createShareCodeRequest(String code) {
@@ -183,7 +176,7 @@ class ShareCodeServiceTest {
 
     @Test
     @DisplayName("해시 생성 테스트 - create 메서드를 통한 간접 테스트")
-    void generateShareCode_Test_ThroughCreate() {
+    void generateShareCode_Hash_Test_ThroughCreate() {
         // Given
         when(shareCodeRepository.findShareCodeById(testUserId)).thenReturn(Optional.empty());
         when(shareCodeRepository.save(any(ShareCode.class))).thenReturn(existingShareCode);
