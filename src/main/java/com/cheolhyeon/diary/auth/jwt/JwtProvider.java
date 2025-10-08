@@ -1,6 +1,7 @@
 package com.cheolhyeon.diary.auth.jwt;
 
 import com.cheolhyeon.diary.app.properties.JwtProperties;
+import com.cheolhyeon.diary.app.util.HashCodeGenerator;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
@@ -8,12 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.Mac;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Date;
@@ -53,12 +49,8 @@ public class JwtProvider {
         return BASE64_ENCODER.encodeToString(randomBytes); // RT 원문
     }
 
-    public String hashRT(String rtPlain) throws NoSuchAlgorithmException, InvalidKeyException {
-        Mac mac = Mac.getInstance("HmacSHA256");
-        byte[] secretKey = Base64.getDecoder().decode(jwtProperties.getRtHmacSecret());
-        mac.init(new SecretKeySpec(secretKey, "HmacSHA256"));
-        byte[] h = mac.doFinal(rtPlain.getBytes(StandardCharsets.UTF_8));
-        return BASE64_ENCODER.encodeToString(h); // DB 저장용 rt_hash
+    public String hashRT(String rtPlain) {
+        return HashCodeGenerator.generateShareCodeHash(rtPlain);
     }
 
     public long getExpirationDate(Date now, String tokenType) {

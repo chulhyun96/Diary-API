@@ -8,9 +8,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,7 +24,6 @@ class JwtProviderTest {
 
     private final String testSecret = "testSecretKeyForJwtTokenGenerationAndValidationTest";
     private final String testIssuer = "test-issuer";
-    private final String testRtHmacSecret = Base64.getEncoder().encodeToString("testRtHmacSecret".getBytes());
     private final int accessTokenExpiration = 3600000; // 1시간
     private final int rtLengthBytes = 32;
 
@@ -141,9 +137,8 @@ class JwtProviderTest {
 
     @Test
     @DisplayName("Refresh Token 해시 생성 성공 테스트")
-    void hashRT_Success() throws NoSuchAlgorithmException, InvalidKeyException {
+    void hashRT_Success() {
         // Given
-        given(jwtProperties.getRtHmacSecret()).willReturn(testRtHmacSecret);
         given(jwtProperties.getRtLengthBytes()).willReturn(rtLengthBytes);
 
         String refreshToken = jwtProvider.generateOpaqueRT();
