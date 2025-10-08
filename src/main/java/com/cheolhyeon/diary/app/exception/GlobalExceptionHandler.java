@@ -201,7 +201,7 @@ public class GlobalExceptionHandler {
         return ErrorResponse.of(errorStatus);
     }
     @ExceptionHandler(FriendRequestException.class)
-    public ErrorResponse handleShareCodeException(FriendRequestException e) {
+    public ErrorResponse handleFriendRequestException(FriendRequestException e) {
         ErrorStatus errorStatus = e.getErrorStatus();
         String errorLocation = extractErrorLocation(e.getStackTrace());
         log.debug("""
