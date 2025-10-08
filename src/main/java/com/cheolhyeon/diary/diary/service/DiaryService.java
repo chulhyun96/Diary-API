@@ -1,5 +1,6 @@
 package com.cheolhyeon.diary.diary.service;
 
+import com.cheolhyeon.diary.app.event.s3.S3RollbackCleanup;
 import com.cheolhyeon.diary.app.exception.diary.DiaryErrorStatus;
 import com.cheolhyeon.diary.app.exception.diary.DiaryException;
 import com.cheolhyeon.diary.app.exception.session.UserErrorStatus;
@@ -7,7 +8,6 @@ import com.cheolhyeon.diary.app.exception.session.UserException;
 import com.cheolhyeon.diary.app.util.UlidGenerator;
 import com.cheolhyeon.diary.auth.entity.User;
 import com.cheolhyeon.diary.auth.repository.UserRepository;
-import com.cheolhyeon.diary.diary.dto.S3RollbackCleanup;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryCreateRequest;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryUpdateRequest;
 import com.cheolhyeon.diary.diary.dto.response.*;
@@ -41,7 +41,7 @@ public class DiaryService {
         int year = currentDateTime.getYear();
         int month = currentDateTime.getMonthValue();
         int day = currentDateTime.getDayOfMonth();
-        byte[] diaryId = UlidGenerator.generatorUlid();
+        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
         List<String> keys = s3Service.upload(writer.getUserId(), diaryId, images, year, month, day);
 
         eventPublisher.publishEvent(new S3RollbackCleanup(keys));
