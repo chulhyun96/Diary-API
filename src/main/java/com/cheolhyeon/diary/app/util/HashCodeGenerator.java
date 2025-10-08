@@ -23,7 +23,7 @@ public class HashCodeGenerator {
     public String generateShareCodeHash(String code) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
-            byte[] secretKey = Base64.getDecoder().decode(rtHmacSecret);
+            byte[] secretKey = rtHmacSecret.getBytes(StandardCharsets.UTF_8);
             mac.init(new SecretKeySpec(secretKey, "HmacSHA256"));
             byte[] h = mac.doFinal(code.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(h)
