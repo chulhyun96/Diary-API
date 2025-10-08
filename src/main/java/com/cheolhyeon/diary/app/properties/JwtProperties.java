@@ -18,5 +18,6 @@ public class JwtProperties {
     private String iss;
     private String aud;
     private int rtLengthBytes;
+    private String rtHmacSecret;
 }
 

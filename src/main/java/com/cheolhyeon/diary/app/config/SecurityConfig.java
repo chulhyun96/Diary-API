@@ -53,7 +53,6 @@ public class SecurityConfig {
                         .requestMatchers("/*.map").permitAll() // 루트 소스맵 파일 허용
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/exception/**").permitAll() // Exception Error 엔드포인트 테스트용
-                        .requestMatchers("/subscribe/notification").permitAll()
                         .requestMatchers("/api/auth/**").permitAll() // 인증 관련 API만 허용
                         .requestMatchers("/api/**").authenticated()) // 나머지 API는 인증 필요
                 .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) -> {

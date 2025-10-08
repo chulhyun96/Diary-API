@@ -1,6 +1,5 @@
 package com.cheolhyeon.diary.diary.service;
 
-import com.cheolhyeon.diary.app.event.s3.S3RollbackCleanup;
 import com.cheolhyeon.diary.app.exception.diary.DiaryErrorStatus;
 import com.cheolhyeon.diary.app.exception.diary.DiaryException;
 import com.cheolhyeon.diary.app.exception.s3.S3ErrorStatus;
@@ -10,6 +9,7 @@ import com.cheolhyeon.diary.app.exception.session.UserException;
 import com.cheolhyeon.diary.app.util.UlidGenerator;
 import com.cheolhyeon.diary.auth.entity.User;
 import com.cheolhyeon.diary.auth.repository.UserRepository;
+import com.cheolhyeon.diary.diary.dto.S3RollbackCleanup;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryCreateRequest;
 import com.cheolhyeon.diary.diary.dto.reqeust.DiaryUpdateRequest;
 import com.cheolhyeon.diary.diary.dto.response.*;
@@ -155,7 +155,7 @@ class DiaryServiceTest {
         List<String> s3Keys = List.of();
 
         Diaries savedDiary = Diaries.builder()
-                .diaryId(UlidGenerator.generatorUlidAsBytes())
+                .diaryId(UlidGenerator.generatorUlid())
                 .writerId(writerId)
                 .writer(displayName)
                 .title("테스트 제목")
@@ -258,7 +258,7 @@ class DiaryServiceTest {
         LocalDateTime startDay = currentDate.atStartOfDay();
         LocalDateTime endDay = startDay.plusDays(1);
         Diaries mockDiary = Diaries.builder()
-                .diaryId(UlidGenerator.generatorUlidAsBytes())
+                .diaryId(UlidGenerator.generatorUlid())
                 .writerId(writerId)
                 .writer("테스트유저")
                 .title("테스트 제목")
@@ -338,7 +338,7 @@ class DiaryServiceTest {
         LocalDateTime endDay = startDay.plusDays(1);
 
         Diaries mockDiary = Diaries.builder()
-                .diaryId(UlidGenerator.generatorUlidAsBytes())
+                .diaryId(UlidGenerator.generatorUlid())
                 .writerId(writerId)
                 .writer("테스트유저")
                 .title("테스트 제목")
@@ -368,7 +368,7 @@ class DiaryServiceTest {
     @DisplayName("일기 ID로 조회 시 일기를 찾을 수 없으면 DiaryException 발생")
     void getDiaryById_DiaryNotFound_ThrowsException() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
 
         given(diaryRepository.findById(diaryId))
                 .willReturn(Optional.empty());
@@ -386,7 +386,7 @@ class DiaryServiceTest {
     @DisplayName("일기 ID로 조회 시 S3 이미지 URL 생성 실패하면 S3Exception 발생")
     void getDiaryById_S3ImageUrlCreationFailure_ThrowsException() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         Diaries mockDiary = Diaries.builder()
                 .diaryId(diaryId)
                 .writerId(1L)
@@ -421,7 +421,7 @@ class DiaryServiceTest {
     @DisplayName("일기 ID로 조회 성공 시 DiaryResponseById 반환")
     void getDiaryById_Success_ReturnsDiaryResponseById() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> imageKeys = List.of("key1", "key2");
         List<String> imageUrls = List.of("url1", "url2");
 
@@ -475,7 +475,7 @@ class DiaryServiceTest {
         LocalDateTime endMonth = startMonth.plusMonths(1);
 
         Diaries diary1 = Diaries.builder()
-                .diaryId(UlidGenerator.generatorUlidAsBytes())
+                .diaryId(UlidGenerator.generatorUlid())
                 .writerId(writerId)
                 .writer("테스트유저1")
                 .title("9월 첫 번째 일기")
@@ -490,7 +490,7 @@ class DiaryServiceTest {
                 .build();
 
         Diaries diary2 = Diaries.builder()
-                .diaryId(UlidGenerator.generatorUlidAsBytes())
+                .diaryId(UlidGenerator.generatorUlid())
                 .writerId(writerId)
                 .writer("테스트유저2")
                 .title("9월 두 번째 일기")
@@ -599,7 +599,7 @@ class DiaryServiceTest {
         LocalDateTime endMonth = startMonth.plusMonths(1);
 
         Diaries mockDiary = Diaries.builder()
-                .diaryId(UlidGenerator.generatorUlidAsBytes())
+                .diaryId(UlidGenerator.generatorUlid())
                 .writerId(writerId)
                 .writer("테스트유저")
                 .title("테스트 일기")
@@ -635,7 +635,7 @@ class DiaryServiceTest {
     @DisplayName("다이어리 수정 성공 테스트")
     void updateDiary_Success() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         DiaryUpdateRequest request = DiaryUpdateRequest.builder()
                 .title("수정된 제목")
                 .content("수정된 내용")
@@ -677,7 +677,7 @@ class DiaryServiceTest {
     @DisplayName("다이어리 수정 시 일기를 찾을 수 없으면 DiaryException 발생")
     void updateDiary_DiaryNotFound_ThrowsException() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         DiaryUpdateRequest request = DiaryUpdateRequest.builder()
                 .title("수정된 제목")
                 .content("수정된 내용")
@@ -698,7 +698,7 @@ class DiaryServiceTest {
     @DisplayName("이미지 업데이트 - 삭제만 수행")
     void updateImages_DeleteOnly_Success() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> deleteImageKeys = List.of("key1", "key2");
         List<MultipartFile> newImages = List.of();
 
@@ -729,7 +729,7 @@ class DiaryServiceTest {
     @DisplayName("이미지 업데이트 - 추가만 수행")
     void updateImages_AddOnly_Success() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> deleteImageKeys = List.of();
         List<MultipartFile> newImages = Arrays.asList(mockImage1, mockImage2);
         List<String> newImageKeys = List.of("newKey1", "newKey2");
@@ -763,7 +763,7 @@ class DiaryServiceTest {
     @DisplayName("이미지 업데이트 - 삭제와 추가 동시 수행")
     void updateImages_DeleteAndAdd_Success() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> deleteImageKeys = List.of("key1");
         List<MultipartFile> newImages = Collections.singletonList(mockImage1);
         List<String> newImageKeys = List.of("newKey1");
@@ -797,7 +797,7 @@ class DiaryServiceTest {
     @DisplayName("이미지 업데이트 시 일기를 찾을 수 없으면 DiaryException 발생")
     void updateImages_DiaryNotFound_ThrowsException() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> deleteImageKeys = List.of("key1");
         List<MultipartFile> newImages = List.of();
 
@@ -818,7 +818,7 @@ class DiaryServiceTest {
     @DisplayName("이미지 업데이트 - 아무것도 변경하지 않은 경우")
     void updateImages_NoChanges_Success() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> deleteImageKeys = List.of();
         List<MultipartFile> newImages = List.of();
 
@@ -849,7 +849,7 @@ class DiaryServiceTest {
     @DisplayName("이미지 업데이트 - S3 삭제 실패 시 예외 전파")
     void updateImages_S3DeleteFailure_ThrowsException() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> deleteImageKeys = List.of("key1");
         List<MultipartFile> newImages = List.of();
 
@@ -883,7 +883,7 @@ class DiaryServiceTest {
     @DisplayName("이미지 업데이트 - S3 업로드 실패 시 예외 전파")
     void updateImages_S3UploadFailure_ThrowsException() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         List<String> deleteImageKeys = List.of();
         List<MultipartFile> newImages = Collections.singletonList(mockImage1);
         List<String> failedKeys = Arrays.asList("key1", "key2");
@@ -918,7 +918,7 @@ class DiaryServiceTest {
     @DisplayName("다이어리 삭제 성공 테스트")
     void deleteDiary_Success() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         Diaries existingDiary = Diaries.builder()
                 .diaryId(diaryId)
                 .writerId(1L)
@@ -948,7 +948,7 @@ class DiaryServiceTest {
     @DisplayName("다이어리 삭제 시 일기를 찾을 수 없으면 DiaryException 발생")
     void deleteDiary_DiaryNotFound_ThrowsException() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
 
         given(diaryRepository.findById(diaryId))
                 .willReturn(Optional.empty());
@@ -965,7 +965,7 @@ class DiaryServiceTest {
     @DisplayName("이미 삭제된 다이어리 삭제 시 DiaryException 발생")
     void deleteDiary_AlreadyDeleted_ThrowsException() {
         // Given
-        byte[] diaryId = UlidGenerator.generatorUlidAsBytes();
+        byte[] diaryId = UlidGenerator.generatorUlid();
         LocalDateTime alreadyDeletedAt = LocalDateTime.now().minusHours(1);
         Diaries alreadyDeletedDiary = Diaries.builder()
                 .diaryId(diaryId)

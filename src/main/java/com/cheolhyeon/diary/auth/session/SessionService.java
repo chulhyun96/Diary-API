@@ -1,6 +1,7 @@
 package com.cheolhyeon.diary.auth.session;
 
-import com.cheolhyeon.diary.app.event.session.SessionInvalidatedEvent;
+import com.cheolhyeon.diary.app.exception.hashcode.GenerationHashCodeErrorStatus;
+import com.cheolhyeon.diary.app.exception.hashcode.GenerationHashCodeException;
 import com.cheolhyeon.diary.app.exception.session.SessionErrorStatus;
 import com.cheolhyeon.diary.app.exception.session.SessionException;
 import com.cheolhyeon.diary.auth.entity.AuthSession;
@@ -8,24 +9,23 @@ import com.cheolhyeon.diary.auth.jwt.JwtProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
-import java.util.Optional;
 
 
 @Service
 @RequiredArgsConstructor
 public class SessionService {
     private final JwtProvider jwtProvider;
-    private final ApplicationEventPublisher eventPublisher;
     private final SessionRepository sessionRepository;
 
     public String setAccessTokenToHeader(Long userId, String sessionId, HttpServletResponse response) {
@@ -36,15 +36,9 @@ public class SessionService {
 
     @Transactional
     public void setRefreshTokenToCookie(Long userId, String sessionId, HttpServletResponse response, HttpServletRequest request) {
-        Optional<AuthSession> oldSession = sessionRepository.findByUserId(userId);
-        oldSession.ifPresent(session -> {
-            sessionRepository.delete(session);
-            // SSE 정리 이벤트 발행
-            eventPublisher.publishEvent(new SessionInvalidatedEvent(session.getSessionId())
-            );
-        });
-
         String clientIp = getClientRealIp(request);
+        sessionRepository.findByUserId(userId)
+                .ifPresent(sessionRepository::delete);
         newSession(userId, sessionId, response, request, clientIp);
     }
 
@@ -54,38 +48,46 @@ public class SessionService {
         LocalDateTime lastRefreshAt = LocalDateTime.now();
         LocalDateTime expiresAt = createdAt.plusDays(5);
         String ua = request.getHeader("User-Agent");
+        try {
+            String currentHashRT = jwtProvider.hashRT(refreshTokenPlain);
 
-        String currentHashRT = jwtProvider.hashRT(refreshTokenPlain);
-
-        AuthSession authSession =
-                new AuthSession(
-                        sessionId, userId, currentHashRT,
-                        null, createdAt, lastRefreshAt,
-                        expiresAt, ua, clientIp);
-        sessionRepository.save(authSession);
-        setCookie(response, refreshTokenPlain, sessionId);
+            AuthSession authSession =
+                    new AuthSession(
+                            sessionId, userId, currentHashRT,
+                            null, createdAt, lastRefreshAt,
+                            expiresAt, ua, clientIp);
+            sessionRepository.save(authSession);
+            setCookie(response, refreshTokenPlain, sessionId);
+        }  catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new GenerationHashCodeException(GenerationHashCodeErrorStatus.GENERATE_FAILED_HASH_CODE);
+        }
     }
-
     @Transactional
     public void refreshSession(String sid, String rtPlain, LocalDateTime now, HttpServletResponse response) {
-        AuthSession authSession = sessionRepository.findActiveSessionById(sid, now)
-                .orElseThrow(() -> new SessionException(SessionErrorStatus.SESSION_EXPIRED));
+        try {
+            AuthSession authSession = sessionRepository.findActiveSessionById(sid, now)
+                    .orElseThrow(() -> new SessionException(SessionErrorStatus.SESSION_EXPIRED));
 
-        if (Objects.equals(jwtProvider.hashRT(rtPlain), authSession.getRtHashCurrent())) {
-            String newPlainRT = jwtProvider.generateOpaqueRT();
-            setCookie(response, newPlainRT, sid);
+            if (Objects.equals(jwtProvider.hashRT(rtPlain), authSession.getRtHashCurrent())) {
+                String newPlainRT = jwtProvider.generateOpaqueRT();
+                setCookie(response, newPlainRT, sid);
 
-            String newHashRT = jwtProvider.hashRT(newPlainRT);
-            String prevHashRT = jwtProvider.hashRT(rtPlain);
-            setAccessTokenToHeader(authSession.getUserId(), sid, response);
-            authSession.refresh(newHashRT, prevHashRT);
-            return;
+                String newHashRT = jwtProvider.hashRT(newPlainRT);
+                String prevHashRT = jwtProvider.hashRT(rtPlain);
+                setAccessTokenToHeader(authSession.getUserId(), sid, response);
+                authSession.refresh(newHashRT, prevHashRT);
+                return;
+            }
+            sessionRepository.deleteById(sid);
+            setExpiredCookie(response, "__HOST-RT");
+            setExpiredCookie(response, "__HOST-SID");
+            SecurityContextHolder.clearContext();
+            throw new SessionException(SessionErrorStatus.SESSION_EXPIRED);
+
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            SecurityContextHolder.clearContext();
+            throw new GenerationHashCodeException(GenerationHashCodeErrorStatus.GENERATE_FAILED_HASH_CODE);
         }
-        sessionRepository.deleteById(sid);
-        setExpiredCookie(response, "__HOST-RT");
-        setExpiredCookie(response, "__HOST-SID");
-        SecurityContextHolder.clearContext();
-        throw new SessionException(SessionErrorStatus.SESSION_EXPIRED);
     }
 
     private void setExpiredCookie(HttpServletResponse response, String cookieName) {

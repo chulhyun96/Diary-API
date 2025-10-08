@@ -1,4 +1,4 @@
-package com.cheolhyeon.diary.app.event.s3;
+package com.cheolhyeon.diary.diary.dto;
 
 
 import com.cheolhyeon.diary.diary.service.S3Service;

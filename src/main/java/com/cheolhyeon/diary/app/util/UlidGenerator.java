@@ -10,12 +10,8 @@ public abstract class UlidGenerator {
         throw new AssertionError("No " +UlidGenerator.class.getSimpleName() + " instances");
     }
     
-    public static byte[] generatorUlidAsBytes() {
+    public static byte[] generatorUlid() {
         return UlidCreator.getUlid().toBytes();
-    }
-
-    public static String generatorUlidAsString() {
-        return UlidCreator.getUlid().toString();
     }
     
     public static String ulidBytesToString(byte[] ulidBytes) {
