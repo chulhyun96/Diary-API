@@ -5,8 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.*;
 
 @DisplayName("SseEmitterService 단위 테스트")
 class SseEmitterServiceTest {
@@ -23,9 +22,10 @@ class SseEmitterServiceTest {
     void subscribe_Success_NewSession() {
         // Given
         String sessionId = "test-session-1";
+        Long userId = 1L;
 
         // When
-        SseEmitter emitter = sseEmitterService.subscribe(sessionId);
+        SseEmitter emitter = sseEmitterService.subscribe(sessionId, userId);
 
         // Then
         assertThat(emitter).isNotNull();
@@ -37,10 +37,11 @@ class SseEmitterServiceTest {
     void subscribe_Success_DuplicateSession() {
         // Given
         String sessionId = "duplicate-session";
+        Long userId = 1L;
 
         // When
-        SseEmitter firstEmitter = sseEmitterService.subscribe(sessionId);
-        SseEmitter secondEmitter = sseEmitterService.subscribe(sessionId);
+        SseEmitter firstEmitter = sseEmitterService.subscribe(sessionId, userId);
+        SseEmitter secondEmitter = sseEmitterService.subscribe(sessionId, userId);
 
         // Then
         assertThat(firstEmitter).isNotNull();
@@ -49,25 +50,26 @@ class SseEmitterServiceTest {
     }
 
     @Test
-    @DisplayName("다양한 세션 동시 구독")
+    @DisplayName("다양한 세션 동시 구독 - 2개까지 허용")
     void subscribe_Success_MultipleSession() {
         // Given
         String sessionId1 = "session-1";
         String sessionId2 = "session-2";
-        String sessionId3 = "session-3";
+        Long userId = 1L;
 
         // When
-        SseEmitter emitter1 = sseEmitterService.subscribe(sessionId1);
-        SseEmitter emitter2 = sseEmitterService.subscribe(sessionId2);
-        SseEmitter emitter3 = sseEmitterService.subscribe(sessionId3);
+        SseEmitter emitter1 = sseEmitterService.subscribe(sessionId1, userId);
+        SseEmitter emitter2 = sseEmitterService.subscribe(sessionId2, userId);
 
         // Then
         assertThat(emitter1).isNotNull();
         assertThat(emitter2).isNotNull();
-        assertThat(emitter3).isNotNull();
         assertThat(emitter1).isNotEqualTo(emitter2);
-        assertThat(emitter2).isNotEqualTo(emitter3);
-        assertThat(emitter1).isNotEqualTo(emitter3);
+        
+        // 3번째 연결은 제한에 걸려야 함
+        assertThatThrownBy(() -> sseEmitterService.subscribe("session-3", userId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("최대 2개의 연결만 허용됩니다.");
     }
 
     @Test
@@ -77,8 +79,9 @@ class SseEmitterServiceTest {
         String sessionId = "active-session";
         String eventName = "test-event";
         String payload = "test-payload";
+        Long userId = 1L;
 
-        sseEmitterService.subscribe(sessionId);
+        sseEmitterService.subscribe(sessionId, userId);
 
         // When & Then
         assertThatCode(() -> sseEmitterService.sendToSid(sessionId, eventName, payload))
@@ -105,8 +108,9 @@ class SseEmitterServiceTest {
         String sessionId = "user-session";
         String eventName = "pending-count";
         Long pendingCount = 5L;
+        Long userId = 1L;
 
-        sseEmitterService.subscribe(sessionId);
+        sseEmitterService.subscribe(sessionId, userId);
 
         // When & Then
         assertThatCode(() -> sseEmitterService.sendToSid(sessionId, eventName, pendingCount))
@@ -118,7 +122,8 @@ class SseEmitterServiceTest {
     void sendToSid_Success_VariousPayloadTypes() {
         // Given
         String sessionId = "payload-test-session";
-        sseEmitterService.subscribe(sessionId);
+        Long userId = 1L;
+        sseEmitterService.subscribe(sessionId, userId);
 
         // When & Then
         assertThatCode(() -> {
@@ -134,7 +139,8 @@ class SseEmitterServiceTest {
     void removeConnection_Success() {
         // Given
         String sessionId = "remove-test-session";
-        sseEmitterService.subscribe(sessionId);
+        Long userId = 1L;
+        sseEmitterService.subscribe(sessionId, userId);
 
         // When
         SseEmitter removed = sseEmitterService.removeConnection(sessionId);
@@ -161,7 +167,8 @@ class SseEmitterServiceTest {
     void sendToSid_Skip_AfterRemoveConnection() {
         // Given
         String sessionId = "removed-session";
-        sseEmitterService.subscribe(sessionId);
+        Long userId = 1L;
+        sseEmitterService.subscribe(sessionId, userId);
         sseEmitterService.removeConnection(sessionId);
 
         // When & Then
@@ -174,9 +181,10 @@ class SseEmitterServiceTest {
     void subscribe_AutoSendConnectEvent() {
         // Given
         String sessionId = "connect-test-session";
+        Long userId = 1L;
 
         // When
-        SseEmitter emitter = sseEmitterService.subscribe(sessionId);
+        SseEmitter emitter = sseEmitterService.subscribe(sessionId, userId);
 
         // Then
         assertThat(emitter).isNotNull();
@@ -188,15 +196,16 @@ class SseEmitterServiceTest {
     void subscribe_CleanupOldSession() {
         // Given
         String sessionId = "resubscribe-session";
+        Long userId = 1L;
 
         // When
-        SseEmitter firstEmitter = sseEmitterService.subscribe(sessionId);
+        SseEmitter firstEmitter = sseEmitterService.subscribe(sessionId, userId);
         // 첫 번째 이벤트 전송 성공
         assertThatCode(() -> sseEmitterService.sendToSid(sessionId, "test", "data"))
                 .doesNotThrowAnyException();
 
         // 재구독
-        SseEmitter secondEmitter = sseEmitterService.subscribe(sessionId);
+        SseEmitter secondEmitter = sseEmitterService.subscribe(sessionId, userId);
 
         // Then
         assertThat(secondEmitter).isNotNull();
@@ -207,23 +216,99 @@ class SseEmitterServiceTest {
     }
 
     @Test
-    @DisplayName("여러 세션 동시 이벤트 전송")
+    @DisplayName("여러 세션 동시 이벤트 전송 - 2개 세션")
     void sendToSid_MultipleSessionsConcurrently() {
         // Given
         String session1 = "session-1";
         String session2 = "session-2";
-        String session3 = "session-3";
+        Long userId = 1L;
 
-        sseEmitterService.subscribe(session1);
-        sseEmitterService.subscribe(session2);
-        sseEmitterService.subscribe(session3);
+        sseEmitterService.subscribe(session1, userId);
+        sseEmitterService.subscribe(session2, userId);
 
         // When & Then
         assertThatCode(() -> {
             sseEmitterService.sendToSid(session1, "event1", "data1");
             sseEmitterService.sendToSid(session2, "event2", "data2");
-            sseEmitterService.sendToSid(session3, "event3", "data3");
         }).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("사용자별 연결 수 제한 테스트 - 2개까지 허용")
+    void subscribe_UserConnectionLimit_AllowTwoConnections() {
+        // Given
+        Long userId = 1L;
+        String session1 = "session-1";
+        String session2 = "session-2";
+
+        // When & Then - 2개까지는 허용되어야 함
+        assertThatCode(() -> {
+            sseEmitterService.subscribe(session1, userId);
+            sseEmitterService.subscribe(session2, userId);
+        }).doesNotThrowAnyException();
+
+        assertThat(sseEmitterService.getUserConnectionCount(userId)).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("사용자별 연결 수 제한 테스트 - 3개째 연결 시 예외")
+    void subscribe_UserConnectionLimit_ThirdConnectionThrowsException() {
+        // Given
+        Long userId = 1L;
+        String session1 = "session-1";
+        String session2 = "session-2";
+        String session3 = "session-3";
+
+        // When - 2개 연결 생성
+        sseEmitterService.subscribe(session1, userId);
+        sseEmitterService.subscribe(session2, userId);
+
+        // Then - 3번째 연결 시 예외 발생
+        assertThatThrownBy(() -> sseEmitterService.subscribe(session3, userId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("최대 2개의 연결만 허용됩니다.");
+    }
+
+    @Test
+    @DisplayName("사용자별 연결 수 조회 테스트")
+    void getUserConnectionCount_Success() {
+        // Given
+        Long userId1 = 1L;
+        Long userId2 = 2L;
+        String session1 = "session-1";
+        String session2 = "session-2";
+
+        // When
+        sseEmitterService.subscribe(session1, userId1);
+        sseEmitterService.subscribe(session2, userId2);
+
+        // Then
+        assertThat(sseEmitterService.getUserConnectionCount(userId1)).isEqualTo(1);
+        assertThat(sseEmitterService.getUserConnectionCount(userId2)).isEqualTo(1);
+        assertThat(sseEmitterService.getUserConnectionCount(999L)).isEqualTo(0); // 존재하지 않는 사용자
+    }
+
+    @Test
+    @DisplayName("전체 활성 연결 수 조회 테스트")
+    void getActiveConnectionCount_Success() {
+        // Given
+        Long userId1 = 1L;
+        Long userId2 = 2L;
+        String session1 = "session-1";
+        String session2 = "session-2";
+
+        // When
+        assertThat(sseEmitterService.getActiveConnectionCount()).isEqualTo(0);
+        
+        sseEmitterService.subscribe(session1, userId1);
+        assertThat(sseEmitterService.getActiveConnectionCount()).isEqualTo(1);
+        
+        sseEmitterService.subscribe(session2, userId2);
+        assertThat(sseEmitterService.getActiveConnectionCount()).isEqualTo(2);
+
+        // Then
+        sseEmitterService.removeConnection(session1);
+        assertThat(sseEmitterService.getActiveConnectionCount()).isEqualTo(1);
     }
 }
 
